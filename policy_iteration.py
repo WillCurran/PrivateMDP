@@ -24,6 +24,7 @@
 #Example of the policy iteration algorithm.
 
 import numpy as np
+import random
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -86,6 +87,36 @@ def print_policy(p, shape):
         policy_string += '\n'
     print(policy_string)
 
+def take_action(curr_state, action, T):
+    """Return the next state given current state and the action chosen
+
+    """
+    coin  = random.random()
+    # coin = 0.5
+    # 12 possible next states
+    next_states = T[curr_state, : , int(action)]
+    prob_counter = 0.0
+    # randomly take next action based on weights
+    for state, prob in enumerate(next_states):
+        if coin < prob_counter + prob:
+            return state
+        prob_counter += prob
+    return -1
+
+
+def execute_policy(p, T, start, max_t):
+    """Place an agent in the environment and generate a stream of actions
+
+    """
+    curr_state = start
+    output = []
+    # no longer than max_t steps
+    for i in range(max_t):
+        output.append(int(p[curr_state]))
+        if p[curr_state] == -1:
+            break
+        curr_state = take_action(curr_state, p[curr_state], T)
+    return output
 
 def main_iterative():
     """Finding the solution using the iterative approach
@@ -141,6 +172,8 @@ def main_iterative():
     print("===================================================")
     print_policy(p, shape=(3,4))
     print("===================================================")
+    print("=================== EXEC  POLICY ==================")
+    print(execute_policy(p, T, 0, 12))
 
 
 def main_linalg():
