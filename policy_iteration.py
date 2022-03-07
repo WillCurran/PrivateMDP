@@ -88,7 +88,7 @@ def print_policy(p, shape):
     print(policy_string)
 
 def take_action(curr_state, action, T):
-    """Return the next state given current state and the action chosen
+    """Return the next state and the given current state and the action chosen
 
     """
     coin  = random.random()
@@ -173,7 +173,32 @@ def main_iterative():
     print_policy(p, shape=(3,4))
     print("===================================================")
     print("=================== EXEC  POLICY ==================")
-    print(execute_policy(p, T, 0, 12))
+    obs = execute_policy(p, T, 0, 12)
+    print(obs)
+    print("====================== VITERBI ====================")
+    # obs needs positive indices for viterbi alg implementation below
+    obs = [obs[i]+1 for i in range(len(obs))]
+    states = [i for i in range(12)]
+    start_p = [0.0 for i in range(12)]
+    start_p[0] = 1.0
+    # average probability of transitioning u->v given any action
+    # TODO - is this correct?
+    trans_p = []
+    for i in range(12):
+        trans_p.append([])
+        for j in range(12):
+            s = 0.0
+            for k in range(4):
+                s += T[i, j, k]
+            trans_p[i].append(s / 4.0)
+    # emmission probabilities are induced by the policy
+    emit_p = []
+    for i in range(12):
+        emit_p.append([0.0 for j in range(5)])
+        # TODO - make nondeterministic policy possible
+        if not np.isnan(p[i]):
+            emit_p[i][int(p[i])+1] = 1.0
+    viterbi(obs, states, start_p, trans_p, emit_p)
 
 
 def main_linalg():
@@ -236,8 +261,57 @@ def main_linalg():
     print_policy(p, shape=(3,4))
     print("===================================================")
 
+# Notes: emission probabilities are induced by the policy - 1.0 and 0.0 x3
 
+# SOURCE: https://en.wikipedia.org/wiki/Viterbi_algorithm
+def viterbi(obs, states, start_p, trans_p, emit_p):
+    V = [{}]
+    # TODO - modification? For us, first observation is no different than the second
+    for st in states:
+        V[0] [st] = {"prob": start_p[st] * emit_p[st] [obs[0]], "prev": None}
+    # Run Viterbi when t > 0
+    for t in range(1, len(obs)):
+        V.append({})
+        for st in states:
+            max_tr_prob = V[t - 1] [states[0]] ["prob"] * trans_p[states[0]] [st]
+            # print("max prob = ", max_tr_prob)
+            prev_st_selected = states[0]
+            for prev_st in states[1:]:
+                tr_prob = V[t - 1] [prev_st] ["prob"] * trans_p[prev_st] [st]
+                # print("testing against", tr_prob)
+                if tr_prob > max_tr_prob:
+                    max_tr_prob = tr_prob
+                    prev_st_selected = prev_st
 
+            max_prob = max_tr_prob * emit_p[st] [obs[t]]
+            V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
+
+    for line in dptable(V):
+        print(line)
+
+    opt = []
+    max_prob = 0.0
+    best_st = None
+    # Get most probable state and its backtrack
+    for st, data in V[-1].items():
+        if data["prob"] > max_prob:
+            max_prob = data["prob"]
+            best_st = st
+    opt.append(best_st)
+    previous = best_st
+
+    # Follow the backtrack till the first observation
+    for t in range(len(V) - 2, -1, -1):
+        opt.insert(0, V[t + 1] [previous] ["prev"])
+        previous = V[t + 1] [previous] ["prev"]
+
+    print ("The steps of states are ", opt, " with highest probability of ", max_prob)
+
+def dptable(V):
+    # Print a table of steps from dictionary
+    yield " " * 5 + "     ".join(("%3d" % i) for i in range(len(V)))
+    for state in V[0]:
+        yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
 
 def main():
 
