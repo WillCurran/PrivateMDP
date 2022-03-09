@@ -173,24 +173,24 @@ def main_iterative():
     print_policy(p, shape=(3,4))
     print("===================================================")
     print("=================== EXEC  POLICY ==================")
-    obs = execute_policy(p, T, 0, 12)
+    start_pos = 11
+    obs = execute_policy(p, T, start_pos, 12)
     print(obs)
     print("====================== VITERBI ====================")
     # obs needs positive indices for viterbi alg implementation below
     obs = [obs[i]+1 for i in range(len(obs))]
     states = [i for i in range(12)]
     start_p = [0.0 for i in range(12)]
-    start_p[0] = 1.0
-    # average probability of transitioning u->v given any action
-    # TODO - is this correct?
+    start_p[start_pos] = 1.0
+
+    # Viterbi needs 12x12 transition matrix
+    # Generate the one induced by the policy
     trans_p = []
     for i in range(12):
-        trans_p.append([])
-        for j in range(12):
-            s = 0.0
-            for k in range(4):
-                s += T[i, j, k]
-            trans_p[i].append(s / 4.0)
+        trans_p.append([0.0 for j in range(12)])
+        if not np.isnan(p[i]) and not p[i] == -1:
+            for j in range(12):
+                trans_p[i][j] = T[i, j, int(p[i])]
     # emmission probabilities are induced by the policy
     emit_p = []
     for i in range(12):
@@ -272,6 +272,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
     # Run Viterbi when t > 0
     for t in range(1, len(obs)):
         V.append({})
+        prob_sum = 0.0
         for st in states:
             max_tr_prob = V[t - 1] [states[0]] ["prob"] * trans_p[states[0]] [st]
             # print("max prob = ", max_tr_prob)
@@ -285,6 +286,19 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
 
             max_prob = max_tr_prob * emit_p[st] [obs[t]]
             V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
+            prob_sum += max_prob
+        
+        # Update probabilities to sum to 1.0 at each time
+        for st in states:
+            V[t] [st] ["prob"] /= prob_sum
+
+    # TODO - Back-propagate the answers
+    # 1. re-weight previous probabilities based on new info
+    #       Easy way - when pr=1.0 at time=t, eliminate non-adjacent states at t-1 and so on
+    #       What if not pr=1.0 at time=t? 
+    # 3. update to sum to 1.0
+    # for t in range(len(obs) - 1, 0, -1):
+
 
     for line in dptable(V):
         print(line)
