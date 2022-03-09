@@ -25,6 +25,22 @@
 
 import numpy as np
 import random
+import tkinter
+from PIL import Image, ImageTk
+
+# global scope for visualization
+root = tkinter.Tk()
+canvas = tkinter.Canvas()
+images = []
+def create_rectangle(x1, y1, x2, y2, **kwargs):
+    if 'alpha' in kwargs:
+        alpha = int(kwargs.pop('alpha') * 255)
+        fill = kwargs.pop('fill')
+        fill = root.winfo_rgb(fill) + (alpha,)
+        image = Image.new('RGBA', (x2-x1, y2-y1), fill)
+        images.append(ImageTk.PhotoImage(image))
+        canvas.create_image(x1, y1, image=images[-1], anchor='nw')
+    canvas.create_rectangle(x1, y1, x2, y2, **kwargs)
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -314,6 +330,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
 
     for line in dptable(V):
         print(line)
+    dptableTkinterAllTime(V)
 
     opt = []
     max_prob = 0.0
@@ -339,10 +356,51 @@ def dptable(V):
     for state in V[0]:
         yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
 
+# visualization over all time 
+# (darkest where there are loops over time)
+def dptableTkinterAllTime(V):
+    scale = 60
+    condensed_table = [0.0 for i in range(12)]
+    for v in V:
+        for (state_idx, _dict) in v.items():
+            condensed_table[state_idx] += _dict["prob"]
+    max_heat = 0.0
+    for i in range(12):
+        max_heat = max(max_heat, condensed_table[i])
+    # max alpha is 1.0
+    for i in range(12):
+        condensed_table[i] /= max_heat
+
+    y_ctr = 0
+    for row in range(3):
+        x_ctr = 0
+        for col in range(4):
+            a = condensed_table[4*row + col]
+            create_rectangle(x_ctr, y_ctr, x_ctr+scale, y_ctr+scale, fill='red', alpha=a)
+            x_ctr += scale
+        y_ctr += scale
+
+    canvas['bg'] = 'white'
+    canvas.pack()
+
+# visualization of states at each time step
+def dptableTkinterIterativeTime(V):
+    scale = 20
+    x_ctr = 0
+    for v in V:
+        y_ctr = 0
+        for _dict in v.values():
+            create_rectangle(x_ctr, y_ctr, x_ctr+scale, y_ctr+scale, fill='red', alpha=_dict["prob"])
+            y_ctr += scale
+        x_ctr += scale
+    canvas['bg'] = 'white'
+    canvas.pack()
+
 def main():
 
     main_iterative()
     #main_linalg()
+    root.mainloop()
 
 
 if __name__ == "__main__":
