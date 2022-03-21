@@ -395,6 +395,7 @@ def k_viterbi(obs, states, start_p, trans_p, emit_p, k):
                         max_tr_prob.pop()
                         prev_st_selected.insert(i, prev_st)
                         prev_st_selected.pop()
+                        break
 
             max_prob = [p * emit_p[st] [obs[t]] for p in max_tr_prob]
             V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
@@ -455,9 +456,9 @@ def dptable(V):
 
 def dptable_k(V, k):
     # Print a table of steps from dictionary
-    yield " " + (" " * (6 * k - 1)).join(("%3d" % i) for i in range(len(V)))
+    yield " " + (" " * (5 * k - 1)).join(("%3d" % i) for i in range(len(V)))
     for state in V[0]:
-        yield "%.7s: " % state + "[" + "] [".join(",".join("%0.3f" % v[state] ["prob"][i] for i in range(k)) for v in V) + "]"
+        yield "%.7s: " % state + "[" + "] [".join(",".join("%0.2f" % v[state] ["prob"][i] for i in range(k)) for v in V) + "]"
 
 # visualization over all time 
 # (darkest where there are loops over time)
@@ -503,7 +504,7 @@ def main():
 
     main_iterative()
     #main_linalg()
-    root.mainloop()
+    # root.mainloop()
 
 
 if __name__ == "__main__":
