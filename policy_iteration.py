@@ -42,6 +42,19 @@ def create_rectangle(x1, y1, x2, y2, **kwargs):
         canvas.create_image(x1, y1, image=images[-1], anchor='nw')
     canvas.create_rectangle(x1, y1, x2, y2, **kwargs)
 
+def action_to_str(a):
+    if a == -1:
+        return "DONE"
+    elif a == 0:
+        return "^"
+    elif a == 1:
+        return "<"
+    elif a == 2:
+        return "v"
+    elif a == 3:
+        return ">"
+    return "#"
+
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
         if not np.isnan(p[s]):
@@ -119,7 +132,6 @@ def take_action(curr_state, action, T):
         prob_counter += prob
     return -1
 
-
 def execute_policy(p, T, start, max_t):
     """Place an agent in the environment and generate a stream of actions
 
@@ -191,7 +203,13 @@ def main_iterative():
     print("=================== EXEC  POLICY ==================")
     start_pos = 11
     obs = execute_policy(p, T, start_pos, 12)
-    print(obs)
+    s = "["
+    for a in obs:
+        s += action_to_str(a) + ", "
+    if len(s) > 1:
+        print(s[:-2] + "]")
+    else:
+        print("[]")
     print("====================== VITERBI ====================")
     # obs needs positive indices for viterbi alg implementation below
     obs = [obs[i]+1 for i in range(len(obs))]
@@ -331,6 +349,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
     for line in dptable(V):
         print(line)
     dptableTkinterAllTime(V)
+    # dptableTkinterIterativeTime(V)
 
     opt = []
     max_prob = 0.0
