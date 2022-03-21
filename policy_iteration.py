@@ -232,7 +232,8 @@ def main_iterative():
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    viterbi(obs, states, start_p, trans_p, emit_p)
+    # viterbi(obs, states, start_p, trans_p, emit_p)
+    k_viterbi(obs, states, start_p, trans_p, emit_p, 3)
 
 
 def main_linalg():
@@ -369,11 +370,94 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
 
     print ("The steps of states are ", opt, " with highest probability of ", max_prob)
 
+def k_viterbi(obs, states, start_p, trans_p, emit_p, k):
+    V = [{}]
+    # TODO - modification? For us, first observation is no different than the second
+    for st in states:
+        V[0] [st] = {"prob": [start_p[st] * emit_p[st] [obs[0]] for i in range(k)], "prev": [None for i in range(k)]}
+    # Run Viterbi when t > 0
+    for t in range(1, len(obs)):
+        V.append({})
+        # prob_sum = 0.0
+        for st in states:
+            max_tr_prob = [0.0 for i in range(k)]
+            prev_st_selected = [None for i in range(k)]
+            # of all previous states, update maximum k probabilities
+            # assume best probability was taken prior
+            for prev_st in states:
+                tr_prob = V[t - 1] [prev_st] ["prob"][0] * trans_p[prev_st] [st]
+                print("testing against", tr_prob)
+                # max prob in descending order
+                # maintain list of length k
+                for i in range(k):
+                    if tr_prob > max_tr_prob[i]:
+                        max_tr_prob.insert(i, tr_prob)
+                        max_tr_prob.pop()
+                        prev_st_selected.insert(i, prev_st)
+                        prev_st_selected.pop()
+
+            max_prob = [p * emit_p[st] [obs[t]] for p in max_tr_prob]
+            V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
+            # prob_sum += max_prob
+        
+        # Update probabilities to sum to 1.0 at each time
+        # for st in states:
+        #     V[t] [st] ["prob"] /= prob_sum
+
+    # Back-propagate the answers
+    # TODO - account for both situations
+    # Is this like running a version of viturbi backwards now?
+    # 1. re-weight previous probabilities based on new info
+    #       Easy way - when pr=1.0 at time=t, eliminate non-adjacent states at t-1 and so on
+    #       What if not pr=1.0 at time=t? 
+    # 2. update to sum to 1.0
+    # for t in range(len(obs) - 1, 0, -1):
+    #     for st in states:
+    #         if V[t] [st] ["prob"] > 0.999999 and V[t] [st] ["prob"] < 1.000001:
+    #             prob_sum = 0.0
+    #             for prev_st in states:
+    #                 # all non-adjacent states probability = 0
+    #                 if trans_p[prev_st] [st] < 0.000001:
+    #                     V[t-1] [prev_st] ["prob"] = 0.0
+    #                 prob_sum += V[t-1] [prev_st] ["prob"]
+    #             # Update probabilities to sum to 1.0
+    #             for prev_st in states:
+    #                 V[t-1] [prev_st] ["prob"] /= prob_sum
+
+    for line in dptable_k(V, k):
+        print(line)
+    # dptableTkinterAllTime(V)
+    # dptableTkinterIterativeTime(V)
+
+    # opt = []
+    # max_prob = 0.0
+    # best_st = None
+    # # Get most probable state and its backtrack
+    # for st, data in V[-1].items():
+    #     if data["prob"] > max_prob:
+    #         max_prob = data["prob"]
+    #         best_st = st
+    # opt.append(best_st)
+    # previous = best_st
+
+    # # Follow the backtrack till the first observation
+    # for t in range(len(V) - 2, -1, -1):
+    #     opt.insert(0, V[t + 1] [previous] ["prev"])
+    #     previous = V[t + 1] [previous] ["prev"]
+
+    # print ("The steps of states are ", opt, " with highest probability of ", max_prob)
+
 def dptable(V):
     # Print a table of steps from dictionary
     yield " " * 5 + "     ".join(("%3d" % i) for i in range(len(V)))
     for state in V[0]:
         yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
+
+def dptable_k(V, k):
+    # Print a table of steps from dictionary
+    yield " " + (" " * (6 * k - 1)).join(("%3d" % i) for i in range(len(V)))
+    for state in V[0]:
+        yield "%.7s: " % state + "[" + "] [".join(",".join("%0.3f" % v[state] ["prob"][i] for i in range(k)) for v in V) + "]"
 
 # visualization over all time 
 # (darkest where there are loops over time)
