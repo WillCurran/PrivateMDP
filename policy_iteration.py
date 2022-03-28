@@ -25,22 +25,6 @@
 
 import numpy as np
 import random
-import tkinter
-from PIL import Image, ImageTk
-
-# global scope for visualization
-root = tkinter.Tk()
-canvas = tkinter.Canvas()
-images = []
-def create_rectangle(x1, y1, x2, y2, **kwargs):
-    if 'alpha' in kwargs:
-        alpha = int(kwargs.pop('alpha') * 255)
-        fill = kwargs.pop('fill')
-        fill = root.winfo_rgb(fill) + (alpha,)
-        image = Image.new('RGBA', (x2-x1, y2-y1), fill)
-        images.append(ImageTk.PhotoImage(image))
-        canvas.create_image(x1, y1, image=images[-1], anchor='nw')
-    canvas.create_rectangle(x1, y1, x2, y2, **kwargs)
 
 def action_to_str(a):
     if a == -1:
@@ -62,14 +46,6 @@ def return_policy_evaluation(p, u, r, T, gamma):
             v[0,s] = 1.0
             action = int(p[s])
             u[s] = r[s] + gamma * np.sum(np.multiply(u, np.dot(v, T[:,:,action])))
-    return u
-
-def return_policy_evaluation_linalg(p, r, T, gamma):
-    u = np.zeros(12)
-    for s in range(12):
-        if not np.isnan(p[s]):
-            action = int(p[s])
-            u[s] = np.linalg.solve(np.identity(12) - gamma*T[:,:,action], r)[s]
     return u
 
 def return_expected_action(u, T, v):
@@ -200,19 +176,7 @@ def main_iterative():
     print("===================================================")
     print_policy(p, shape=(3,4))
     print("===================================================")
-    print("=================== EXEC  POLICY ==================")
     start_pos = 11
-    obs = execute_policy(p, T, start_pos, 12)
-    s = "["
-    for a in obs:
-        s += action_to_str(a) + ", "
-    if len(s) > 1:
-        print(s[:-2] + "]")
-    else:
-        print("[]")
-    print("====================== VITERBI ====================")
-    # obs needs positive indices for viterbi alg implementation below
-    obs = [obs[i]+1 for i in range(len(obs))]
     states = [i for i in range(12)]
     start_p = [0.0 for i in range(12)]
     start_p[start_pos] = 1.0
@@ -232,70 +196,73 @@ def main_iterative():
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    viterbi(obs, states, start_p, trans_p, emit_p)
+    
+    print("====================== A Priori Analysis ====================")
+    t = 10
+    prior_expected_visits = get_expected_visits(states, start_p, T, p, t)
+    print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+t) )
+    print("=================== EXEC  POLICY ==================")
+    obs = execute_policy(p, T, start_pos, 12)
+    s = "["
+    for a in obs:
+        s += action_to_str(a) + ", "
+    if len(s) > 1:
+        print(s[:-2] + "]")
+    else:
+        print("[]")
+    # obs needs positive indices for viterbi alg implementation below
+    obs = [obs[i]+1 for i in range(len(obs))]
+    print("====================== VITERBI ====================")
+    post_expected_visits = viterbi(obs, states, start_p, trans_p, emit_p)
+    print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
+    print("====================== INFORMATION GAIN ====================")
+    print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
+    print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
+    print("Information Gain: \n" + ', '.join(["%.2f" % abs(post_expected_visits[st]-prior_expected_visits[st]) for st in states]))
 
+def get_expected_visits(states, start_p, T, p, t):
+    """Get number of extpected visits of each state after t steps
+    with no information about observations
 
-def main_linalg():
-    """Finding the solution using a linear algebra approach
-
+    states : state indices
+    start_p : initial probability distribution
+    T : original transition matrix
+    p : policy
+    t : time interval
     """
-    gamma = 0.999
-    iteration = 0
-    T = np.load("T.npy")
+    # build new transition matrix from policy
+    trans_p = []
+    for i in range(12):
+        trans_p.append([0.0 for j in range(12)])
+        if not np.isnan(p[i]) and not p[i] == -1:
+            for j in range(12):
+                trans_p[i][j] = T[i, j, int(p[i])]
+        elif p[i] == -1:
+            # if at a terminal, then consider that you are at this state for all remaining time
+            trans_p[i][i] = 1.0
 
-    #Generate the first policy randomly
-    # Nan=Nothing, -1=Terminal, 0=Up, 1=Left, 2=Down, 3=Right
-    p = np.random.randint(0, 4, size=(12)).astype(np.float32)
-    p[5] = np.NaN
-    p[3] = p[7] = -1
+    curr_p = [start_p[j] for j in range(12)]
+    expected_visits = [start_p[j] for j in range(12)]
+    for i in range(t):
+        next_p = [0.0 for j in range(12)]
+        for st in states:
+            for next_st in states:
+                next_p[next_st] += curr_p[st] * trans_p[st][next_st]
+        for st in states:
+            expected_visits[st] += next_p[st]
+            curr_p[st] = next_p[st]
+        print("time=%d : %s" % (i, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
+        # print("--- time=%d : %s" % (i, ', '.join(["%.2f" % expected_visits[st] for st in states]) + ": sum=%.2f" % sum(expected_visits)))
+    return expected_visits
 
-    #Utility vectors
-    u = np.array([0.0, 0.0, 0.0,  0.0,
-                   0.0, 0.0, 0.0,  0.0,
-                   0.0, 0.0, 0.0,  0.0])
+def generate_naive_paths():
+    """Generate all action sequences, then narrow down
+    based on 
 
-    #Reward vector
-    r = np.array([-0.04, -0.04, -0.04,  +1.0,
-                  -0.04,   0.0, -0.04,  -1.0,
-                  -0.04, -0.04, -0.04, -0.04])
-
-    while True:
-        iteration += 1
-        epsilon = 0.0001
-        #1- Policy evaluation
-        #u1 = u.copy()
-        u = return_policy_evaluation_linalg(p, r, T, gamma)
-        #Stopping criteria
-        #delta = np.absolute(u - u1).max()
-        #if (delta < epsilon * (1 - gamma) / gamma) or iteration > 100: break
-        unchanged = True
-        for s in range(12):
-            if not np.isnan(p[s]) and not p[s]==-1:
-                v = np.zeros((1,12))
-                v[0,s] = 1.0
-                #2- Policy improvement
-                a = return_expected_action(u, T, v)         
-                if a != p[s]: 
-                    p[s] = a
-                    unchanged = False
-        print_policy(p, shape=(3,4))
-
-        if unchanged: break
-
-    print("=================== FINAL RESULT ==================")
-    print("Iterations: " + str(iteration))
-    #print("Delta: " + str(delta))
-    print("Gamma: " + str(gamma))
-    print("Epsilon: " + str(epsilon))
-    print("===================================================")
-    print(u[0:4])
-    print(u[4:8])
-    print(u[8:12])
-    print("===================================================")
-    print_policy(p, shape=(3,4))
-    print("===================================================")
-
-# Notes: emission probabilities are induced by the policy - 1.0 and 0.0 x3
+    Goal: gain intuition on how to create a smarter generator of observation strings
+    """
+    pass
 
 # SOURCE: https://en.wikipedia.org/wiki/Viterbi_algorithm
 def viterbi(obs, states, start_p, trans_p, emit_p):
@@ -346,10 +313,14 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
                 for prev_st in states:
                     V[t-1] [prev_st] ["prob"] /= prob_sum
 
-    for line in dptable(V):
-        print(line)
-    dptableTkinterAllTime(V)
-    # dptableTkinterIterativeTime(V)
+    # actual expected visits
+    expected_visits = [0.0 for st in states]
+    for t in range(len(V)):
+        for st in states:
+            expected_visits[st] += V[t][st]["prob"]
+
+    # for line in dptable(V):
+    #     print(line)
 
     opt = []
     max_prob = 0.0
@@ -368,6 +339,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
         previous = V[t + 1] [previous] ["prev"]
 
     print ("The steps of states are ", opt, " with highest probability of ", max_prob)
+    return expected_visits
 
 def dptable(V):
     # Print a table of steps from dictionary
@@ -375,51 +347,9 @@ def dptable(V):
     for state in V[0]:
         yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
 
-# visualization over all time 
-# (darkest where there are loops over time)
-def dptableTkinterAllTime(V):
-    scale = 60
-    condensed_table = [0.0 for i in range(12)]
-    for v in V:
-        for (state_idx, _dict) in v.items():
-            condensed_table[state_idx] += _dict["prob"]
-    max_heat = 0.0
-    for i in range(12):
-        max_heat = max(max_heat, condensed_table[i])
-    # max alpha is 1.0
-    for i in range(12):
-        condensed_table[i] /= max_heat
-
-    y_ctr = 0
-    for row in range(3):
-        x_ctr = 0
-        for col in range(4):
-            a = condensed_table[4*row + col]
-            create_rectangle(x_ctr, y_ctr, x_ctr+scale, y_ctr+scale, fill='red', alpha=a)
-            x_ctr += scale
-        y_ctr += scale
-
-    canvas['bg'] = 'white'
-    canvas.pack()
-
-# visualization of states at each time step
-def dptableTkinterIterativeTime(V):
-    scale = 20
-    x_ctr = 0
-    for v in V:
-        y_ctr = 0
-        for _dict in v.values():
-            create_rectangle(x_ctr, y_ctr, x_ctr+scale, y_ctr+scale, fill='red', alpha=_dict["prob"])
-            y_ctr += scale
-        x_ctr += scale
-    canvas['bg'] = 'white'
-    canvas.pack()
-
 def main():
-
     main_iterative()
     #main_linalg()
-    root.mainloop()
 
 
 if __name__ == "__main__":
