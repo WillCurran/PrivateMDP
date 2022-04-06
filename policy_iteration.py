@@ -318,7 +318,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
                     max_tr_prob = tr_prob
                     prev_st_selected = prev_st
 
-            max_prob = max_tr_prob * emit_p[st] [obs[t]]
+            max_prob = max_tr_prob * emit_p[st][obs[t]]
             V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
             prob_sum += max_prob
         
@@ -327,11 +327,11 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
             V[t] [st] ["prob"] /= prob_sum
 
     # Back-propagate the answers
-    # TODO - account for both situations
+    # ASSUMES YOU KNOW YOU ENDED AT A GOAL STATE
     # Is this like running a version of viturbi backwards now?
     # 1. re-weight previous probabilities based on new info
     #       Easy way - when pr=1.0 at time=t, eliminate non-adjacent states at t-1 and so on
-    #       What if not pr=1.0 at time=t? 
+    #       What if not pr=1.0 at time=t? TODO - think about this.
     # 2. update to sum to 1.0
     for t in range(len(obs) - 1, 0, -1):
         for st in states:
@@ -362,12 +362,14 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
     opt.append(best_st)
     previous = best_st
 
+    path_prob = max_prob
     # Follow the backtrack till the first observation
     for t in range(len(V) - 2, -1, -1):
         opt.insert(0, V[t + 1] [previous] ["prev"])
+        path_prob *= V[t + 1] [previous] ["prob"]
         previous = V[t + 1] [previous] ["prev"]
 
-    print ("The steps of states are ", opt, " with highest probability of ", max_prob)
+    print ("The steps of states are ", opt, " with highest probability of ", path_prob)
 
 def dptable(V):
     # Print a table of steps from dictionary
