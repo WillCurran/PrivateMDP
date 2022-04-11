@@ -198,10 +198,11 @@ def main_iterative():
             emit_p[i][int(p[i])+1] = 1.0
     
     print("====================== A Priori Analysis ====================")
-    t = 10
-    prior_expected_visits = get_expected_visits(states, start_p, T, p, t)
+    interesting_time = 4
+    interesting_state = 3
+    prior_expected_visits = get_expected_visits(states, start_p, T, p, interesting_time)
     print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+t) )
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+interesting_time) )
     print("=================== EXEC  POLICY ==================")
     obs = execute_policy(p, T, start_pos, 12)
     s = "["
@@ -214,12 +215,18 @@ def main_iterative():
     # obs needs positive indices for viterbi alg implementation below
     obs = [obs[i]+1 for i in range(len(obs))]
     print("====================== VITERBI ====================")
-    post_expected_visits = viterbi(obs, states, start_p, trans_p, emit_p)
-    print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
-    print("====================== INFORMATION GAIN ====================")
-    print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
-    print("Information Gain: \n" + ', '.join(["%.2f" % abs(post_expected_visits[st]-prior_expected_visits[st]) for st in states]))
+    dp_table = viterbi(obs, states, start_p, trans_p, emit_p)
+    if interesting_time >= len(dp_table):
+        print("Actual execution did not go as long as %d steps. How to handle information gain here?")
+    else:
+        post_expected_visits = [dp_table[interesting_time][st]["prob"] for st in states]
+        print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
+        print("====================== INFORMATION GAIN ====================")
+        ig = information_gain(prior_expected_visits, post_expected_visits, interesting_state)
+        print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
+
+def information_gain(prior_expected_visits, post_expected_visits, interesting_state):
+    return prior_expected_visits[interesting_state] - post_expected_visits[interesting_state]
 
 def get_expected_visits(states, start_p, T, p, t):
     """Get number of extpected visits of each state after t steps
@@ -241,20 +248,19 @@ def get_expected_visits(states, start_p, T, p, t):
         elif p[i] == -1:
             # if at a terminal, then consider that you are at this state for all remaining time
             trans_p[i][i] = 1.0
-
+    
+    # initial distribution tells us where we will be at time=0
     curr_p = [start_p[j] for j in range(12)]
-    expected_visits = [start_p[j] for j in range(12)]
-    for i in range(t):
+    print("time=%d : %s" % (0, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
+    for i in range(1,t+1):
         next_p = [0.0 for j in range(12)]
         for st in states:
             for next_st in states:
                 next_p[next_st] += curr_p[st] * trans_p[st][next_st]
         for st in states:
-            expected_visits[st] += next_p[st]
             curr_p[st] = next_p[st]
         print("time=%d : %s" % (i, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
-        # print("--- time=%d : %s" % (i, ', '.join(["%.2f" % expected_visits[st] for st in states]) + ": sum=%.2f" % sum(expected_visits)))
-    return expected_visits
+    return curr_p
 
 def generate_naive_paths():
     """Generate all action sequences, then narrow down
@@ -313,14 +319,8 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
                 for prev_st in states:
                     V[t-1] [prev_st] ["prob"] /= prob_sum
 
-    # actual expected visits
-    expected_visits = [0.0 for st in states]
-    for t in range(len(V)):
-        for st in states:
-            expected_visits[st] += V[t][st]["prob"]
-
-    # for line in dptable(V):
-    #     print(line)
+    for line in dptable(V):
+        print(line)
 
     opt = []
     max_prob = 0.0
@@ -339,7 +339,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
         previous = V[t + 1] [previous] ["prev"]
 
     print ("The steps of states are ", opt, " with highest probability of ", max_prob)
-    return expected_visits
+    return V
 
 def dptable(V):
     # Print a table of steps from dictionary
