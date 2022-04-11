@@ -25,6 +25,7 @@
 
 import numpy as np
 import random
+import math
 
 def action_to_str(a):
     if a == -1:
@@ -215,18 +216,40 @@ def main_iterative():
     # obs needs positive indices for viterbi alg implementation below
     obs = [obs[i]+1 for i in range(len(obs))]
     print("====================== VITERBI ====================")
-    dp_table = viterbi(obs, states, start_p, trans_p, emit_p)
+    (dp_table, max_path_prob) = viterbi(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
-        print("Actual execution did not go as long as %d steps. How to handle information gain here?")
+        print("Actual execution did not go as long as %d steps. How to handle information gain here?" % interesting_time)
     else:
         post_expected_visits = [dp_table[interesting_time][st]["prob"] for st in states]
         print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
-        ig = information_gain(prior_expected_visits, post_expected_visits, interesting_state)
+        ig = information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
         print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
 
-def information_gain(prior_expected_visits, post_expected_visits, interesting_state):
-    return prior_expected_visits[interesting_state] - post_expected_visits[interesting_state]
+def information_gain(Q, P, s, path_probability):
+    """Calculate a bound for information gain given one execution of viturbi on one string of observations
+    Q is the "prior" distribution over all states for a certain time
+    P is the "posterior" distribution over all states for a certain time
+    s is the state we are interested in
+    path_probability is the probability of a path (pr of observation string * pr of most likely path given by viterbi)"""
+
+    # calculate information gain (relative entropy, or Kullback–Leibler divergence)
+    # D_{kl}(P || Q) = sum over all outcomes of Pr(outcome)*log2(P(outcome)/Q(outcome))
+    rel_entropy = P[s] * math.log2(P[s] / Q[s]) + \
+          (1.0 - P[s]) * math.log2((1.0 - P[s]) / Q[s])
+
+    max_remaining_info = 0.0
+    if Q[s] > 0.5:
+        # max info is when P=0.0
+        max_remaining_info = 0.0 * math.log2(0.0 / Q[s]) + \
+                     (1.0 - 0.0) * math.log2(1.0 / Q[s])
+    else:
+        # max info is when P=1.0
+        max_remaining_info = 1.0 * math.log2(1.0 / Q[s]) + \
+                    (1.0 - 1.0) * math.log2(0.0 / Q[s])
+    lower_bound = rel_entropy
+    upper_bound = path_probability * rel_entropy + (1.0 - path_probability) * max_remaining_info
+    return (lower_bound, upper_bound)
 
 def get_expected_visits(states, start_p, T, p, t):
     """Get number of extpected visits of each state after t steps
@@ -291,7 +314,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
                     max_tr_prob = tr_prob
                     prev_st_selected = prev_st
 
-            max_prob = max_tr_prob * emit_p[st] [obs[t]]
+            max_prob = max_tr_prob * emit_p[st][obs[t]]
             V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
             prob_sum += max_prob
         
@@ -300,11 +323,11 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
             V[t] [st] ["prob"] /= prob_sum
 
     # Back-propagate the answers
-    # TODO - account for both situations
+    # ASSUMES YOU KNOW YOU ENDED AT A GOAL STATE
     # Is this like running a version of viturbi backwards now?
     # 1. re-weight previous probabilities based on new info
     #       Easy way - when pr=1.0 at time=t, eliminate non-adjacent states at t-1 and so on
-    #       What if not pr=1.0 at time=t? 
+    #       What if not pr=1.0 at time=t? TODO - think about this.
     # 2. update to sum to 1.0
     for t in range(len(obs) - 1, 0, -1):
         for st in states:
@@ -333,13 +356,15 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
     opt.append(best_st)
     previous = best_st
 
+    path_prob = max_prob
     # Follow the backtrack till the first observation
     for t in range(len(V) - 2, -1, -1):
         opt.insert(0, V[t + 1] [previous] ["prev"])
+        path_prob *= V[t + 1] [previous] ["prob"]
         previous = V[t + 1] [previous] ["prev"]
 
-    print ("The steps of states are ", opt, " with highest probability of ", max_prob)
-    return V
+    print ("The steps of states are ", opt, " with highest probability of ", path_prob)
+    return (V, path_prob)
 
 def dptable(V):
     # Print a table of steps from dictionary
