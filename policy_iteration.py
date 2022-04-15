@@ -27,6 +27,8 @@ import numpy as np
 import random
 import math
 
+CMP_DELTA = 0.000001
+
 def action_to_str(a):
     if a == -1:
         return "DONE"
@@ -227,7 +229,7 @@ def main_iterative():
         print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
 
 def information_gain(Q, P, s, path_probability):
-    """Calculate a bound for information gain given one execution of viturbi on one string of observations
+    """Calculate a bound for expected(?) information gain given one execution of viturbi on one string of observations
     Q is the "prior" distribution over all states for a certain time
     P is the "posterior" distribution over all states for a certain time
     s is the state we are interested in
@@ -235,21 +237,32 @@ def information_gain(Q, P, s, path_probability):
 
     # calculate information gain (relative entropy, or Kullback–Leibler divergence)
     # D_{kl}(P || Q) = sum over all outcomes of Pr(outcome)*log2(P(outcome)/Q(outcome))
-    rel_entropy = P[s] * math.log2(P[s] / Q[s]) + \
-          (1.0 - P[s]) * math.log2((1.0 - P[s]) / Q[s])
+
+    rel_entropy = 0.0
+    # If Q[s] == 0 or Q[s] == 1, then there's no uncertainty
+    if Q[s] < CMP_DELTA or Q[s] > 1.0 - CMP_DELTA:
+        return (0.0, 0.0)
+    # If P[s] = 0, then math works out ok, since 0log0 == 0
+    elif P[s] < CMP_DELTA:
+        rel_entropy = (1.0 - P[s]) * math.log2((1.0 - P[s]) / (1.0 - Q[s]))
+    # otherwise, use standard formula
+    else:
+        rel_entropy = P[s] * math.log2(P[s] / Q[s]) + \
+            (1.0 - P[s]) * math.log2((1.0 - P[s]) / (1.0 - Q[s]))
 
     max_remaining_info = 0.0
     if Q[s] > 0.5:
         # max info is when P=0.0
-        max_remaining_info = 0.0 * math.log2(0.0 / Q[s]) + \
-                     (1.0 - 0.0) * math.log2(1.0 / Q[s])
+        max_remaining_info = (1.0 - 0.0) * math.log2(1.0 / Q[s])
     else:
         # max info is when P=1.0
-        max_remaining_info = 1.0 * math.log2(1.0 / Q[s]) + \
-                    (1.0 - 1.0) * math.log2(0.0 / Q[s])
-    lower_bound = rel_entropy
-    upper_bound = path_probability * rel_entropy + (1.0 - path_probability) * max_remaining_info
-    return (lower_bound, upper_bound)
+        max_remaining_info = 1.0 * math.log2(1.0 / Q[s])
+    
+    # what we know based on paths we tested.
+    known_rel_entropy = rel_entropy
+    # worst case expected entropy, given what we know.
+    worst_expected_entropy = path_probability * rel_entropy + (1.0 - path_probability) * max_remaining_info
+    return (known_rel_entropy, worst_expected_entropy)
 
 def get_expected_visits(states, start_p, T, p, t):
     """Get number of extpected visits of each state after t steps
