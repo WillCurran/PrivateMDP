@@ -26,6 +26,7 @@
 import numpy as np
 import random
 import math
+import heapq 
 
 CMP_DELTA = 0.000001
 
@@ -117,6 +118,31 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
+def dijkstra(trans_p, start, goal):
+    distances = [math.inf for i in range(12)]
+    previous = [math.nan for i in range(12)]
+    start = 4
+    min_heap = [(0,start)]
+    distances[start] = 0
+    previous[start] = -1
+    goal = 2
+    max_time = 11
+    while(len(min_heap) != 0):
+        value, curr_state = heapq.heappop(min_heap)
+        if(curr_state == goal):
+            break
+        for i in range(12):
+            prob = trans_p[curr_state][i]
+            if(prob != 0):
+                distance = - math.log(prob)
+                alt = distances [curr_state] + distance
+                if alt < distances[i]:
+                    distances[i] = alt
+                    previous[i] = curr_state
+                    heapq.heappush(min_heap,(alt, i))
+
+    return previous
+
 def main_iterative():
     """Finding the solution using the iterative approach
 
@@ -193,6 +219,17 @@ def main_iterative():
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
     
+
+    
+    
+    print("=======================Dijkstra's==========================")
+    # print("Distances")
+    # print(distances)
+    
+
+
+    # print(trans_p)
+
     print("====================== A Priori Analysis ====================")
     interesting_time = 4
     interesting_state = 3
