@@ -23,12 +23,87 @@
 
 #Example of the policy iteration algorithm.
 
+from cmath import isnan
 import numpy as np
 import random
 import math
 import heapq 
+import copy
 
 CMP_DELTA = 0.000001
+
+
+
+
+
+#adj[node] = [(edgeWeight, Neighbor)]
+class Graph:
+    def __init__(self):
+        self.adj = {}
+    
+    def insert_node(self,name):
+        self.adj[name] = []
+
+    def remove_node(self,name):
+        
+
+        #needs to be changed later for efficiency
+        #how can we quickly get the incoming edges?
+        for node in self.adj:
+            i = 0
+            for weight,v in self.adj[node]:
+                if v == name:
+                    del self.adj[node][i]
+                i += 1
+        self.adj.pop(name)
+
+    
+    def insert_edge(self,n1,n2,weight):
+        self.adj[n1] += [(weight, n2)]
+    
+    def remove_edge(self,n1,n2):
+        i = 0
+        for weight, v in self.adj[n1]:
+            if v == n2:
+                del self.adj[n1][i]
+                return weight
+            i+=1
+        
+    def print_adj(self):
+        for node in self.adj:
+            print(node + ": ", end='')
+            print(self.adj[node])     
+    
+    def adjacent_edges(self,name):
+        return self.adj[name]
+
+    def getInt(name):
+        if len(name) == 2:
+            return int(name[1])
+        return int(name[1:])
+
+    def path_cost(self, path):
+        cost = 0
+        for i in range(len(path)-1):
+            for weight, node in self.adj[path[i]]:
+                if node == path[i+1]:
+                    cost += weight
+        return cost
+
+def trans_to_graph(trans_p):
+    g = Graph()
+
+    for i in range(len(trans_p)):
+        for j in range(len(trans_p[i])):
+            if i == 0:
+                g.insert_node("v"+str(j))
+            if trans_p[i][j] != 0:
+                g.insert_edge("v"+str(i),"v"+str(j), - math.log(trans_p[i][j]))
+    g.print_adj()
+    return g
+
+            
+
 
 def action_to_str(a):
     if a == -1:
@@ -118,30 +193,93 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
-def dijkstra(trans_p, start, goal):
-    distances = [math.inf for i in range(12)]
-    previous = [math.nan for i in range(12)]
-    start = 4
+def dijkstra(g, start, goal):
+    distances = {}
+    previous = {}
+    for node in g.adj:
+        distances[node] = math.inf
+        previous[node] = "null" 
     min_heap = [(0,start)]
     distances[start] = 0
-    previous[start] = -1
-    goal = 2
+    previous[start] = "null"
+    goal = "v7"
     max_time = 11
+
+    path = []
     while(len(min_heap) != 0):
         value, curr_state = heapq.heappop(min_heap)
         if(curr_state == goal):
+            while curr_state != "null":
+                #print("State: " + str(curr_state))
+                path = [curr_state] + path
+                curr_state = previous[curr_state]
             break
-        for i in range(12):
-            prob = trans_p[curr_state][i]
-            if(prob != 0):
-                distance = - math.log(prob)
-                alt = distances [curr_state] + distance
-                if alt < distances[i]:
-                    distances[i] = alt
-                    previous[i] = curr_state
-                    heapq.heappush(min_heap,(alt, i))
+        curr_adj = g.adjacent_edges(curr_state)
+        for weight, node in curr_adj:
+            alt = distances[curr_state] + weight 
+            if alt < distances[node]:
+                distances[node] = alt
+                previous[node] = curr_state
+                heapq.heappush(min_heap,(alt, node))
+    
 
-    return previous
+    return path
+#SOURCE: https://en.wikipedia.org/wiki/Yen%27s_algorithm
+def kdijkstra(g,start,goal,K):
+    A = [(dijkstra(g,start,goal))]
+
+    B = []
+    gCopy = Graph()
+    gCopy = copy.deepcopy(g)
+    for k in range(1,K):
+        for i in range(len(A[k-1]) - 2):
+
+            
+            spurNode = A[k-1][i]
+
+            rootPath = A[k-1][0:i]
+
+            
+            for p in A:
+                if rootPath == p[0:i]:
+                    g.remove_edge(p[i], p[i+1])
+                    
+
+            for rootNode in rootPath:
+                if rootNode != spurNode:
+                    #remove rootnode from trans_p
+                    g.remove_node(rootNode)
+
+
+            
+            spurPath = dijkstra(g,spurNode,goal)
+            
+            if(len(spurPath) == 0):
+                g = copy.deepcopy(gCopy)
+                continue
+            totalPath = rootPath + spurPath
+            totalCost = gCopy.path_cost(totalPath)
+
+            
+            if B.count((totalCost, totalPath)) == 0:
+                heapq.heappush(B, (totalCost, totalPath))
+            
+            g = copy.deepcopy(gCopy)
+            
+
+        if len(B) == 0:
+            break
+
+
+        A += [B[0][1]]
+        heapq.heappop(B)
+
+
+    return A
+
+
+
+
 
 def main_iterative():
     """Finding the solution using the iterative approach
@@ -222,13 +360,20 @@ def main_iterative():
 
     
     
-    print("=======================Dijkstra's==========================")
-    # print("Distances")
-    # print(distances)
-    
+    # print("=======================Graph==========================")
+   
+    # graph = trans_to_graph(trans_p)
+    print("=======================Dijkstra==========================")
+    g = trans_to_graph(trans_p)
+    D = (dijkstra(g,"v4","v7"))
+    print(g.path_cost(D), D)
 
 
-    # print(trans_p)
+    print("=======================KDijkstra==========================")
+
+    A = kdijkstra(g, "v4", "v7", 10)
+
+    print(A)
 
     print("====================== A Priori Analysis ====================")
     interesting_time = 4
