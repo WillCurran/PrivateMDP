@@ -23,7 +23,7 @@
 
 #Example of the policy iteration algorithm.
 
-from cmath import isnan
+from cmath import isnan, nan
 import numpy as np
 import random
 import math
@@ -89,6 +89,20 @@ class Graph:
                 if node == path[i+1]:
                     cost += weight
         return cost
+
+def path_cost(path, T):
+        cost = 0
+        for i in range(len(path)-1):
+            cost += -1 * math.log(T[path[i]][path[i+1]])
+
+        return cost
+
+def path_prob(path, T):
+        prob = 1
+        for i in range(len(path)-1):
+            prob *= T[path[i]][path[i+1]]
+
+        return prob
 
 def trans_to_graph(trans_p):
     g = Graph()
@@ -193,92 +207,154 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
-def dijkstra(g, start, goal):
+def dijkstra_actions(T, start, goal,p):
+    path = dijkstra(T, start, goal)
+    path = [p[node] for node in path]
+    actions = [action_to_str(node) for node in path]
+    return actions
+
+def dijkstra(T, start, goal):
     distances = {}
     previous = {}
-    for node in g.adj:
+    for node in range(len(T)):
         distances[node] = math.inf
-        previous[node] = "null" 
+        previous[node] = -1
+
     min_heap = [(0,start)]
     distances[start] = 0
-    previous[start] = "null"
-    goal = "v7"
+    previous[start] = -1
     max_time = 11
 
     path = []
     while(len(min_heap) != 0):
         value, curr_state = heapq.heappop(min_heap)
         if(curr_state == goal):
-            while curr_state != "null":
+            while curr_state != -1:
                 #print("State: " + str(curr_state))
                 path = [curr_state] + path
                 curr_state = previous[curr_state]
             break
-        curr_adj = g.adjacent_edges(curr_state)
-        for weight, node in curr_adj:
-            alt = distances[curr_state] + weight 
-            if alt < distances[node]:
-                distances[node] = alt
-                previous[node] = curr_state
-                heapq.heappush(min_heap,(alt, node))
+        curr_adj = T[curr_state]
+        node = 0
+        for weight in curr_adj:
+            if weight != 0:
+                weight = -1 * math.log(weight)
+                alt = distances[curr_state] + weight 
+                if alt < distances[node]:
+                    distances[node] = alt
+                    previous[node] = curr_state
+                    heapq.heappush(min_heap,(alt, node))
+            node += 1
     
 
     return path
 #SOURCE: https://en.wikipedia.org/wiki/Yen%27s_algorithm
-def kdijkstra(g,start,goal,K):
-    A = [(dijkstra(g,start,goal))]
+def kdijkstra(T,start,goal,K):
+    A = [(dijkstra(T,start,goal))]
 
     B = []
-    gCopy = Graph()
-    gCopy = copy.deepcopy(g)
+
+    tCopy = copy.deepcopy(T)
     for k in range(1,K):
         for i in range(len(A[k-1]) - 2):
 
-            
             spurNode = A[k-1][i]
 
             rootPath = A[k-1][0:i]
-
-            
+   
             for p in A:
                 if rootPath == p[0:i]:
-                    g.remove_edge(p[i], p[i+1])
+                    T[p[i]][p[i+1]] = 0
+                    T[p[i+1]][p[i]] = 0
                     
 
             for rootNode in rootPath:
                 if rootNode != spurNode:
                     #remove rootnode from trans_p
-                    g.remove_node(rootNode)
-
-
+                    for i in range(len(T)):
+                        T[i][rootNode] = 0
+                        T[rootNode][i] = 0
             
-            spurPath = dijkstra(g,spurNode,goal)
+            spurPath = dijkstra(T,spurNode,goal)
             
             if(len(spurPath) == 0):
-                g = copy.deepcopy(gCopy)
+                T = copy.deepcopy(tCopy)
                 continue
             totalPath = rootPath + spurPath
-            totalCost = gCopy.path_cost(totalPath)
+            totalCost = path_cost(totalPath, tCopy)
 
-            
             if B.count((totalCost, totalPath)) == 0:
                 heapq.heappush(B, (totalCost, totalPath))
             
-            g = copy.deepcopy(gCopy)
+            T = copy.deepcopy(tCopy)
             
 
         if len(B) == 0:
             break
 
+        A += [B[0][1]]
+        heapq.heappop(B)
+
+
+    T = tCopy
+    return A
+
+
+
+def kdijkstra_actions(T,start,goal,K,pi):
+    A = [(dijkstra(T,start,goal))]
+
+    B = []
+
+    tCopy = copy.deepcopy(T)
+    for k in range(1,K):
+        for i in range(len(A[k-1]) - 2):
+
+            spurNode = A[k-1][i]
+
+            rootPath = A[k-1][0:i]
+   
+            for p in A:
+                if rootPath == p[0:i]:
+                    T[p[i]][p[i+1]] = 0
+                    T[p[i+1]][p[i]] = 0
+                    
+
+            for rootNode in rootPath:
+                if rootNode != spurNode:
+                    #remove rootnode from trans_p
+                    for i in range(len(T)):
+                        T[i][rootNode] = 0
+                        T[rootNode][i] = 0
+            
+            spurPath = dijkstra(T,spurNode,goal)
+            
+            if(len(spurPath) == 0):
+                T = copy.deepcopy(tCopy)
+                continue
+            totalPath = rootPath + spurPath
+            totalCost = path_cost(totalPath, tCopy)
+
+            if B.count((totalCost, totalPath)) == 0:
+                heapq.heappush(B, (totalCost, totalPath))
+            
+            T = copy.deepcopy(tCopy)
+            
+
+        if len(B) == 0:
+            break
 
         A += [B[0][1]]
         heapq.heappop(B)
 
 
+    T = tCopy
+    action_path = []
+    actions = []
+    for i in range(len(A)):
+        action_path = [pi[node] for node in A[i]]
+        actions = actions + [action_to_str(node) for node in action_path]
     return A
-
-
-
 
 
 def main_iterative():
@@ -364,16 +440,20 @@ def main_iterative():
    
     # graph = trans_to_graph(trans_p)
     print("=======================Dijkstra==========================")
-    g = trans_to_graph(trans_p)
-    D = (dijkstra(g,"v4","v7"))
-    print(g.path_cost(D), D)
+    #print(trans_p)
 
+    # g = trans_to_graph(trans_p)
+    # D = dijkstra(g,"v4","v7")
+    D = (dijkstra(trans_p,4,7))
+    print(D)
+    print(path_prob(D,trans_p))
 
     print("=======================KDijkstra==========================")
 
-    A = kdijkstra(g, "v4", "v7", 10)
+    A = kdijkstra_actions(trans_p, 4, 7, 10,p)
 
     print(A)
+
 
     print("====================== A Priori Analysis ====================")
     interesting_time = 4
