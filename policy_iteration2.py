@@ -23,87 +23,14 @@
 
 #Example of the policy iteration algorithm.
 
-from cmath import isnan
 import numpy as np
+import pandas as pd
 import random
 import math
 import heapq 
-import copy
+import matplotlib.pyplot as plt
 
 CMP_DELTA = 0.000001
-
-
-
-
-
-#adj[node] = [(edgeWeight, Neighbor)]
-class Graph:
-    def __init__(self):
-        self.adj = {}
-    
-    def insert_node(self,name):
-        self.adj[name] = []
-
-    def remove_node(self,name):
-        
-
-        #needs to be changed later for efficiency
-        #how can we quickly get the incoming edges?
-        for node in self.adj:
-            i = 0
-            for weight,v in self.adj[node]:
-                if v == name:
-                    del self.adj[node][i]
-                i += 1
-        self.adj.pop(name)
-
-    
-    def insert_edge(self,n1,n2,weight):
-        self.adj[n1] += [(weight, n2)]
-    
-    def remove_edge(self,n1,n2):
-        i = 0
-        for weight, v in self.adj[n1]:
-            if v == n2:
-                del self.adj[n1][i]
-                return weight
-            i+=1
-        
-    def print_adj(self):
-        for node in self.adj:
-            print(node + ": ", end='')
-            print(self.adj[node])     
-    
-    def adjacent_edges(self,name):
-        return self.adj[name]
-
-    def getInt(name):
-        if len(name) == 2:
-            return int(name[1])
-        return int(name[1:])
-
-    def path_cost(self, path):
-        cost = 0
-        for i in range(len(path)-1):
-            for weight, node in self.adj[path[i]]:
-                if node == path[i+1]:
-                    cost += weight
-        return cost
-
-def trans_to_graph(trans_p):
-    g = Graph()
-
-    for i in range(len(trans_p)):
-        for j in range(len(trans_p[i])):
-            if i == 0:
-                g.insert_node("v"+str(j))
-            if trans_p[i][j] != 0:
-                g.insert_edge("v"+str(i),"v"+str(j), - math.log(trans_p[i][j]))
-    g.print_adj()
-    return g
-
-            
-
 
 def action_to_str(a):
     if a == -1:
@@ -193,102 +120,39 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
-def dijkstra(g, start, goal):
-    distances = {}
-    previous = {}
-    for node in g.adj:
-        distances[node] = math.inf
-        previous[node] = "null" 
+def dijkstra(trans_p, start, goal):
+    distances = [math.inf for i in range(12)]
+    previous = [math.nan for i in range(12)]
+    start = 4
     min_heap = [(0,start)]
     distances[start] = 0
-    previous[start] = "null"
-    goal = "v7"
+    previous[start] = -1
+    goal = 2
     max_time = 11
-
-    path = []
     while(len(min_heap) != 0):
         value, curr_state = heapq.heappop(min_heap)
         if(curr_state == goal):
-            while curr_state != "null":
-                #print("State: " + str(curr_state))
-                path = [curr_state] + path
-                curr_state = previous[curr_state]
             break
-        curr_adj = g.adjacent_edges(curr_state)
-        for weight, node in curr_adj:
-            alt = distances[curr_state] + weight 
-            if alt < distances[node]:
-                distances[node] = alt
-                previous[node] = curr_state
-                heapq.heappush(min_heap,(alt, node))
-    
+        for i in range(12):
+            prob = trans_p[curr_state][i]
+            if(prob != 0):
+                distance = - math.log(prob)
+                alt = distances [curr_state] + distance
+                if alt < distances[i]:
+                    distances[i] = alt
+                    previous[i] = curr_state
+                    heapq.heappush(min_heap,(alt, i))
 
-    return path
-#SOURCE: https://en.wikipedia.org/wiki/Yen%27s_algorithm
-def kdijkstra(g,start,goal,K):
-    A = [(dijkstra(g,start,goal))]
+    return previous
 
-    B = []
-    gCopy = Graph()
-    gCopy = copy.deepcopy(g)
-    for k in range(1,K):
-        for i in range(len(A[k-1]) - 2):
-
-            
-            spurNode = A[k-1][i]
-
-            rootPath = A[k-1][0:i]
-
-            
-            for p in A:
-                if rootPath == p[0:i]:
-                    g.remove_edge(p[i], p[i+1])
-                    
-
-            for rootNode in rootPath:
-                if rootNode != spurNode:
-                    #remove rootnode from trans_p
-                    g.remove_node(rootNode)
-
-
-            
-            spurPath = dijkstra(g,spurNode,goal)
-            
-            if(len(spurPath) == 0):
-                g = copy.deepcopy(gCopy)
-                continue
-            totalPath = rootPath + spurPath
-            totalCost = gCopy.path_cost(totalPath)
-
-            
-            if B.count((totalCost, totalPath)) == 0:
-                heapq.heappush(B, (totalCost, totalPath))
-            
-            g = copy.deepcopy(gCopy)
-            
-
-        if len(B) == 0:
-            break
-
-
-        A += [B[0][1]]
-        heapq.heappop(B)
-
-
-    return A
-
-
-
-
-
-def main_iterative():
+def main_iterative(obs = []):
     """Finding the solution using the iterative approach
 
     """
     gamma = 0.999
     iteration = 0
+    print("================= LOADING TRANSITIONAL MATRIX ==================")
     T = np.load("T2.npy")
-
     #Generate the first policy randomly
     # Nan=Obstacle, -1=Terminal, 0=Forward, 1=Correct
     p = np.random.randint(0, 2, size=(12)).astype(np.float32)
@@ -324,18 +188,47 @@ def main_iterative():
                 if a != p[s]: p[s] = a
         print_policy(p, shape=(3,4))
 
-    print("=================== FINAL RESULT ==================")
+    print("================ POLICY ITERATION FINAL RESULT =================")
     print("Iterations: " + str(iteration))
     print("Delta: " + str(delta))
     print("Gamma: " + str(gamma))
     print("Epsilon: " + str(epsilon))
-    print("===================================================")
+    print("================================================================")
     print(u[0:4])
     print(u[4:8])
     print(u[8:12])
-    print("===================================================")
+    print("================================================================")
     print_policy(p, shape=(3,4))
-    print("===================================================")
+    print("===================== A Priori Analysis ======================")
+    print("==================MDP + Policy = Markov Chain ==================")
+    print("Policy: ")
+    print([int(i) for i in p])
+    print("Markov Chain:")
+    markov_chain = to_markov_chain([int(i) for i in p], T, 12)
+    markov_chain_df = pd.DataFrame(markov_chain)
+    print(markov_chain_df)
+    
+    #set terminal state
+    markov_chain[7][7]=1.0 
+    #set start state
+    state = [
+        [0.0,0.0,0.0,0.0,
+         1.0,0.0,0.0,0.0,
+         0.0,0.0,0.0,0.0]]
+    state_history = [state[0]]
+    for x in range(20):
+        next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
+                        for markov_chain_col in zip(*markov_chain)]
+                                for state_row in state]
+        state_history.append(next_state[0])
+        state = next_state
+    print("Stationary Distribution")
+    print(state)
+    state_history_df = pd.DataFrame(state_history)
+    state_history_df.plot()
+    plt.show()
+    print(state_history_df)
+    print("================================================================")
     start_pos = 4
     states = [i for i in range(12)]
     start_p = [0.0 for i in range(12)]
@@ -356,33 +249,22 @@ def main_iterative():
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    
-
-    
-    
-    # print("=======================Graph==========================")
-   
-    # graph = trans_to_graph(trans_p)
-    print("=======================Dijkstra==========================")
-    g = trans_to_graph(trans_p)
-    D = (dijkstra(g,"v4","v7"))
-    print(g.path_cost(D), D)
-
-
-    print("=======================KDijkstra==========================")
-
-    A = kdijkstra(g, "v4", "v7", 10)
-
-    print(A)
-
-    print("====================== A Priori Analysis ====================")
+    print("========================= Dijkstra's =========================")
+    # print("Distances")
+    # print(distances)
+    # print(trans_p)
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = get_expected_visits(states, start_p, T, p, interesting_time)
     print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
     print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+interesting_time) )
-    print("=================== EXEC  POLICY ==================")
-    obs = execute_policy(p, T, start_pos, 12)
+    if (not(obs)):
+        print("====================== Executing Policy ======================")
+        obs = execute_policy(p, T, start_pos, 12)
+        #obs = [0,0,1,-1]
+    else:
+        print("===================== Not Executing Policy ===================")
+    print(obs)
     s = "["
     for a in obs:
         s += action_to_str(a) + ", "
@@ -392,7 +274,8 @@ def main_iterative():
         print("[]")
     # obs needs positive indices for viterbi alg implementation below
     obs = [obs[i]+1 for i in range(len(obs))]
-    print("====================== VITERBI ====================")
+    print(obs)
+    print("=========================== VITERBI ==========================")
     (dp_table, max_path_prob) = viterbi(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
         print("Actual execution did not go as long as %d steps. How to handle information gain here?" % interesting_time)
@@ -559,6 +442,12 @@ def dptable(V):
     yield " " * 5 + "     ".join(("%3d" % i) for i in range(len(V)))
     for state in V[0]:
         yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
+
+def to_markov_chain(p, T, max_t):
+	result = []
+	for t in range(max_t):
+		result.append([row[p[t]] for row in T[t][:]])
+	return result
 
 def main():
     main_iterative()
