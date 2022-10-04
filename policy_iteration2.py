@@ -27,19 +27,20 @@ import numpy as np
 import pandas as pd
 import random
 import math
-import heapq 
+import heapq
 import matplotlib.pyplot as plt
 
 CMP_DELTA = 0.000001
 
 def action_to_str(a):
+    result = '#'
     if a == -1:
-        return "DONE"
+        result = "DONE"
     elif a == 0:
-        return ">"
+        result = ">"
     elif a == 1:
-        return "|"
-    return "#"
+        result = "|"
+    return result
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -65,8 +66,8 @@ def return_expected_action(u, T, v):
     """
     actions_array = np.zeros(2)
     for action in range(2):
-         #Expected utility of doing a in state s, according to T and u.
-         actions_array[action] = np.sum(np.multiply(u, np.dot(v, T[:,:,action])))
+        #Expected utility of doing a in state s, according to T and u.
+        actions_array[action] = np.sum(np.multiply(u, np.dot(v, T[:,:,action])))
     return np.argmax(actions_array)
 
 def print_policy(p, shape):
@@ -82,10 +83,14 @@ def print_policy(p, shape):
     policy_string = ""
     for row in range(shape[0]):
         for col in range(shape[1]):
-            if(p[counter] == -1): policy_string += " *  "            
-            elif(p[counter] == 0): policy_string += " >  "
-            elif(p[counter] == 1): policy_string += " |  "
-            elif(np.isnan(p[counter])): policy_string += " #  "
+            if p[counter] == -1:
+                policy_string += " *  "
+            elif p[counter] == 0:
+                policy_string += " >  "
+            elif p[counter] == 1:
+                policy_string += " |  "
+            elif np.isnan(p[counter]):
+                policy_string += " #  "
             counter += 1
         policy_string += '\n'
     print(policy_string)
@@ -129,13 +134,13 @@ def dijkstra(trans_p, start, goal):
     previous[start] = -1
     goal = 2
     max_time = 11
-    while(len(min_heap) != 0):
+    while len(min_heap) != 0:
         value, curr_state = heapq.heappop(min_heap)
-        if(curr_state == goal):
+        if curr_state == goal:
             break
         for i in range(12):
             prob = trans_p[curr_state][i]
-            if(prob != 0):
+            if prob != 0:
                 distance = - math.log(prob)
                 alt = distances [curr_state] + distance
                 if alt < distances[i]:
@@ -153,6 +158,8 @@ def main_iterative(obs = []):
     iteration = 0
     print("================= LOADING TRANSITIONAL MATRIX ==================")
     T = np.load("T2.npy")
+    print(T)
+    print("====================== POLICY ITERATION ========================")
     #Generate the first policy randomly
     # Nan=Obstacle, -1=Terminal, 0=Forward, 1=Correct
     p = np.random.randint(0, 2, size=(12)).astype(np.float32)
@@ -184,7 +191,7 @@ def main_iterative(obs = []):
                 v = np.zeros((1,12))
                 v[0,s] = 1.0
                 #2- Policy improvement
-                a = return_expected_action(u, T, v)         
+                a = return_expected_action(u, T, v)
                 if a != p[s]: p[s] = a
         print_policy(p, shape=(3,4))
 
@@ -207,9 +214,9 @@ def main_iterative(obs = []):
     markov_chain = to_markov_chain([int(i) for i in p], T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df)
-    
+
     #set terminal state
-    markov_chain[7][7]=1.0 
+    markov_chain[7][7]=1.0
     #set start state
     state = [
         [0.0,0.0,0.0,0.0,
@@ -225,8 +232,8 @@ def main_iterative(obs = []):
     print("Stationary Distribution")
     print(state)
     state_history_df = pd.DataFrame(state_history)
-    state_history_df.plot()
-    plt.show()
+    #state_history_df.plot()
+    #plt.show()
     print(state_history_df)
     print("================================================================")
     start_pos = 4
@@ -258,7 +265,7 @@ def main_iterative(obs = []):
     prior_expected_visits = get_expected_visits(states, start_p, T, p, interesting_time)
     print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
     print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+interesting_time) )
-    if (not(obs)):
+    if not obs:
         print("====================== Executing Policy ======================")
         obs = execute_policy(p, T, start_pos, 12)
         #obs = [0,0,1,-1]
@@ -273,8 +280,19 @@ def main_iterative(obs = []):
     else:
         print("[]")
     # obs needs positive indices for viterbi alg implementation below
+    #obs_original = obs
     obs = [obs[i]+1 for i in range(len(obs))]
+    
+    end_state = 7
+    trans_p[end_state][end_state]= 1.0 #setting terminal state?
+    
+    trans_p_df = pd.DataFrame(trans_p)
+    emit_p_df = pd.DataFrame(emit_p)
     print(obs)
+    print(states)
+    print(start_p)
+    print(trans_p_df)
+    print(emit_p_df)
     print("=========================== VITERBI ==========================")
     (dp_table, max_path_prob) = viterbi(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
@@ -285,6 +303,16 @@ def main_iterative(obs = []):
         print("====================== INFORMATION GAIN ====================")
         ig = information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
         print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
+    print("=========================== Forward Backward ==========================")
+    result = fwd_bkw(obs, states, start_p, trans_p, emit_p, end_state)
+    for line in result:
+        print(*line)
+    print('##FORWARD##')
+    print(pd.DataFrame(result[0]))
+    print('##BACKWARD##')
+    print(pd.DataFrame(result[1]))
+    print('##POSTERIOR##')
+    print(pd.DataFrame(result[2]))
 
 def information_gain(Q, P, s, path_probability):
     """Calculate a bound for expected(?) information gain given one execution of viturbi on one string of observations
@@ -315,7 +343,7 @@ def information_gain(Q, P, s, path_probability):
     else:
         # max info is when P=1.0
         max_remaining_info = 1.0 * math.log2(1.0 / Q[s])
-    
+
     # what we know based on paths we tested.
     known_rel_entropy = rel_entropy
     # worst case expected entropy, given what we know.
@@ -342,7 +370,7 @@ def get_expected_visits(states, start_p, T, p, t):
         elif p[i] == -1:
             # if at a terminal, then consider that you are at this state for all remaining time
             trans_p[i][i] = 1.0
-    
+
     # initial distribution tells us where we will be at time=0
     curr_p = [start_p[j] for j in range(12)]
     print("time=%d : %s" % (0, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
@@ -388,7 +416,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
             max_prob = max_tr_prob * emit_p[st][obs[t]]
             V[t] [st] = {"prob": max_prob, "prev": prev_st_selected}
             prob_sum += max_prob
-        
+
         # Update probabilities to sum to 1.0 at each time
         for st in states:
             V[t] [st] ["prob"] /= prob_sum
@@ -415,7 +443,7 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
 
     for line in dptable(V):
         print(line)
-
+    
     opt = []
     max_prob = 0.0
     best_st = None
@@ -444,15 +472,67 @@ def dptable(V):
         yield "%.7s: " % state + " ".join("%.7s" % ("%lf" % v[state] ["prob"]) for v in V)
 
 def to_markov_chain(p, T, max_t):
-	result = []
-	for t in range(max_t):
-		result.append([row[p[t]] for row in T[t][:]])
-	return result
+    result = []
+    for t in range(max_t):
+        result.append([row[p[t]] for row in T[t][:]])
+    return result
+
+# Source: https://en.wikipedia.org/wiki/Forward%E2%80%93backward_algorithm
+def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
+    """Forward–backward algorithm."""
+    # Forward part of the algorithm
+    fwd = []
+    for i, observation_i in enumerate(observations):
+        f_curr = {}
+        for st in states:
+            if i == 0:
+                # base case for the forward part
+                prev_f_sum = start_prob[st]
+            else:
+                prev_f_sum = sum(f_prev[k] * trans_prob[k][st] for k in states)
+
+            f_curr[st] = emm_prob[st][observation_i] * prev_f_sum
+
+        fwd.append(f_curr)
+        f_prev = f_curr
+
+    p_fwd = sum(f_curr[k] * trans_prob[k][end_st] for k in states)
+
+    # Backward part of the algorithm
+    bkw = []
+    for i, observation_i_plus in enumerate(reversed(observations[1:] + [None,])):
+        b_curr = {}
+        for st in states:
+            if i == 0:
+                # base case for backward part
+                b_curr[st] = trans_prob[st][end_st]
+            else:
+                b_curr[st] = sum(trans_prob[st][l] * emm_prob[l][observation_i_plus] * b_prev[l] for l in states)
+
+        bkw.insert(0,b_curr)
+        b_prev = b_curr
+
+    p_bkw = sum(start_prob[l] * emm_prob[l][observations[0]] * b_curr[l] for l in states)
+
+    # Merging the two parts
+    posterior = []
+    for i in range(len(observations)):
+    	#this was added because the state transition distribution had rows with all 0s for the terminal state.
+    	#you have to set 1.0 to the terminal state when transitioning from the terminal state
+    	#if not p_fwd:
+    	#	posterior.append({st: 0.0 for st in states})
+    	#else:
+    	#	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
+    	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
+    print(p_fwd)
+    print(p_bkw)
+    #https://davidamos.dev/the-right-way-to-compare-floats-in-python/
+    assert math.isclose(p_fwd, p_bkw)     
+    return fwd, bkw, posterior
 
 def main():
     main_iterative()
     #main_linalg()
-
 
 if __name__ == "__main__":
     main()
