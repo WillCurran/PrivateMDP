@@ -1,28 +1,29 @@
 #!/usr/bin/env python
 
-#MIT License
-#Copyright (c) 2017 Massimiliano Patacchiola
+# MIT License
+# Copyright (c) 2017 Massimiliano Patacchiola
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-#Example of the policy iteration algorithm.
+# Example of the policy iteration algorithm.
 
+from ctypes import sizeof
 import numpy as np
 import pandas as pd
 import random
@@ -36,14 +37,17 @@ import Viterbi_Algorithm_wikipedia as vt
 import helpers as hlp
 import dijkstras as dk
 
+
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
         if not np.isnan(p[s]):
-            v = np.zeros((1,12))
-            v[0,s] = 1.0
+            v = np.zeros((1, 12))
+            v[0, s] = 1.0
             action = int(p[s])
-            u[s] = r[s] + gamma * np.sum(np.multiply(u, np.dot(v, T[:,:,action])))
+            u[s] = r[s] + gamma * \
+                np.sum(np.multiply(u, np.dot(v, T[:, :, action])))
     return u
+
 
 def return_expected_action(u, T, v):
     """Return the expected action.
@@ -60,9 +64,11 @@ def return_expected_action(u, T, v):
     """
     actions_array = np.zeros(4)
     for action in range(4):
-         #Expected utility of doing a in state s, according to T and u.
-         actions_array[action] = np.sum(np.multiply(u, np.dot(v, T[:,:,action])))
+        # Expected utility of doing a in state s, according to T and u.
+        actions_array[action] = np.sum(
+            np.multiply(u, np.dot(v, T[:, :, action])))
     return np.argmax(actions_array)
+
 
 def print_policy(p, shape):
     """Print the policy on the terminal
@@ -79,12 +85,18 @@ def print_policy(p, shape):
     policy_string = ""
     for row in range(shape[0]):
         for col in range(shape[1]):
-            if(p[counter] == -1): policy_string += " *  "            
-            elif(p[counter] == 0): policy_string += " ^  "
-            elif(p[counter] == 1): policy_string += " <  "
-            elif(p[counter] == 2): policy_string += " v  "           
-            elif(p[counter] == 3): policy_string += " >  "
-            elif(np.isnan(p[counter])): policy_string += " #  "
+            if(p[counter] == -1):
+                policy_string += " *  "
+            elif(p[counter] == 0):
+                policy_string += " ^  "
+            elif(p[counter] == 1):
+                policy_string += " <  "
+            elif(p[counter] == 2):
+                policy_string += " v  "
+            elif(p[counter] == 3):
+                policy_string += " >  "
+            elif(np.isnan(p[counter])):
+                policy_string += " #  "
             counter += 1
         policy_string += '\n'
     print(policy_string)
@@ -107,12 +119,12 @@ def main_iterative(obs = []):
     #Terminal States
     p[3] = p[7] = -1
 
-    #Utility vectors
+    # Utility vectors
     u = np.array([0.0, 0.0, 0.0,  0.0,
-                   0.0, 0.0, 0.0,  0.0,
-                   0.0, 0.0, 0.0,  0.0])
+                  0.0, 0.0, 0.0,  0.0,
+                  0.0, 0.0, 0.0,  0.0])
 
-    #Reward vector
+    # Reward vector
     r = np.array([-0.04, -0.04, -0.04,  +1.0,
                   -0.04,   0.0, -0.04,  -1.0,
                   -0.04, -0.04, -0.04, -0.04])
@@ -120,20 +132,22 @@ def main_iterative(obs = []):
     while True:
         iteration += 1
         epsilon = 0.0001
-        #1- Policy evaluation
+        # 1- Policy evaluation
         u1 = u.copy()
         u = return_policy_evaluation(p, u, r, T, gamma)
-        #Stopping criteria
+        # Stopping criteria
         delta = np.absolute(u - u1).max()
-        if delta < epsilon * (1 - gamma) / gamma: break
+        if delta < epsilon * (1 - gamma) / gamma:
+            break
         for s in range(12):
-            if not np.isnan(p[s]) and not p[s]==-1:
-                v = np.zeros((1,12))
-                v[0,s] = 1.0
-                #2- Policy improvement
-                a = return_expected_action(u, T, v)         
-                if a != p[s]: p[s] = a
-        print_policy(p, shape=(3,4))
+            if not np.isnan(p[s]) and not p[s] == -1:
+                v = np.zeros((1, 12))
+                v[0, s] = 1.0
+                # 2- Policy improvement
+                a = return_expected_action(u, T, v)
+                if a != p[s]:
+                    p[s] = a
+        print_policy(p, shape=(3, 4))
 
     print("================ POLICY ITERATION FINAL RESULT =================")
     print("Iterations: " + str(iteration))
@@ -251,8 +265,10 @@ def main_iterative(obs = []):
     if interesting_time >= len(dp_table):
         print("Actual execution did not go as long as %d steps. How to handle information gain here?" % interesting_time)
     else:
-        post_expected_visits = [dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
+        post_expected_visits = [
+            dp_table[interesting_time][st]["prob"] for st in states]
+        print("Actual expected visits given single execution: \n" +
+              ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         #ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
         #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
@@ -296,7 +312,7 @@ def main_iterative(obs = []):
 
 def main():
     main_iterative()
-    #main_linalg()
+    # main_linalg()
 
 if __name__ == "__main__":
     main()

@@ -297,7 +297,7 @@ def kdijkstra(T,start,goal,K):
 
         if len(B) == 0:
             break
-
+        
         A += [B[0][1]]
         heapq.heappop(B)
 
@@ -308,9 +308,15 @@ def kdijkstra(T,start,goal,K):
 
 
 def kdijkstra_actions(T,start,goal,K,pi):
-    A = [(dijkstra(T,start,goal))]
+    dijkstra_res = dijkstra(T,start,goal)
+    A = [dijkstra_res]
 
     B = []
+
+    C = [([action_to_str(pi[node]) for node in dijkstra_res], path_prob(dijkstra_res,T))]
+
+
+    overall_prob = path_prob(dijkstra_res,T)
 
     tCopy = copy.deepcopy(T)
     for k in range(1,K):
@@ -343,23 +349,50 @@ def kdijkstra_actions(T,start,goal,K,pi):
 
             if B.count((totalCost, totalPath)) == 0:
                 heapq.heappush(B, (totalCost, totalPath))
-            
+                #print("Total path " + str(totalPath))
+
             T = copy.deepcopy(tCopy)
-            
 
         if len(B) == 0:
             break
+        
 
-        A += [B[0][1]]
+        #Check for a repeat
+        #if its a repeat then add the costs together and only add one into A
+        #increase K
+        curr_prob = path_prob(B[0][1],T)
+        overall_prob += curr_prob
+        A.append(B[0][1])
+
+        actions = [action_to_str(pi[node]) for node in B[0][1]]
+
+        append = True
+
+        for i in range(len(C)):
+            curr_actions = C[i][0]
+            if curr_actions == actions:
+                C[i] = (actions, curr_prob + C[i][1])
+                K += 1
+                append = False
+                break
+        if append:
+            C.append((actions, curr_prob))
+        
         heapq.heappop(B)
 
 
+        print("Overall prob " + str(overall_prob))
+        print(C)
+
+        if(k == K and overall_prob <= .8):
+            K *= 2
+
+
     T = tCopy
-    action_path = []
-    actions = []
-    for i in range(len(A)):
-        action_path = [pi[node] for node in A[i]]
-        actions = actions + [action_to_str(node) for node in action_path]
+
+    # for i in range(len(A)):
+    #     action_path = [pi[node] for node in A[i]]
+    #     actions = actions + [[action_to_str(node) for node in action_path]]
     return A
 
 
@@ -488,10 +521,16 @@ def main_iterative():
 
     print("=======================KDijkstra==========================")
 
+
+
     A = kdijkstra_actions(trans_p, 4, 7, 10,p)
 
     print(A)
 
+
+    print("=======================Trans==========================")
+    
+    print(trans_p[6])
 
     print("====================== A Priori Analysis ====================")
     interesting_time = 4
