@@ -27,20 +27,13 @@ import numpy as np
 import pandas as pd
 import random
 import math
-import heapq
 import matplotlib.pyplot as plt
+from scipy.stats import entropy
+from scipy.special import rel_entr, kl_div
 
-CMP_DELTA = 0.000001
-
-def action_to_str(a):
-    result = '#'
-    if a == -1:
-        result = "DONE"
-    elif a == 0:
-        result = ">"
-    elif a == 1:
-        result = "|"
-    return result
+import Forward_Backward_Algiorithm_wikipedia as fb
+import Viterbi_Algorithm_wikipedia as vt
+import helpers as hlp
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -125,6 +118,31 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
+def dijkstra(trans_p, start, goal):
+    distances = [math.inf for i in range(12)]
+    previous = [math.nan for i in range(12)]
+    start = 4
+    min_heap = [(0,start)]
+    distances[start] = 0
+    previous[start] = -1
+    goal = 2
+    max_time = 11
+    while len(min_heap) != 0:
+        value, curr_state = heapq.heappop(min_heap)
+        if curr_state == goal:
+            break
+        for i in range(12):
+            prob = trans_p[curr_state][i]
+            if prob != 0:
+                distance = - math.log(prob)
+                alt = distances [curr_state] + distance
+                if alt < distances[i]:
+                    distances[i] = alt
+                    previous[i] = curr_state
+                    heapq.heappush(min_heap,(alt, i))
+
+    return previous
+
 def main_iterative(obs = []):
     """Finding the solution using the iterative approach
 
@@ -187,7 +205,7 @@ def main_iterative(obs = []):
     print("Policy: ")
     print([int(i) for i in p])
     print("Markov Chain:")
-    markov_chain = to_markov_chain([int(i) for i in p], T, 12)
+    markov_chain = hlp.to_markov_chain([int(i) for i in p], T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df)
 
@@ -243,7 +261,7 @@ def main_iterative(obs = []):
     print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+interesting_time) )
     if not obs:
         print("====================== Executing Policy ======================")
-        obs = execute_policy(p, T, start_pos, 12)
+        obs = hlp.execute_policy(p, T, start_pos, 12)
         #obs = [0,0,1,-1]
     else:
         print("===================== Not Executing Policy ===================")
@@ -270,17 +288,17 @@ def main_iterative(obs = []):
     print(trans_p_df)
     print(emit_p_df)
     print("=========================== VITERBI ==========================")
-    (dp_table, max_path_prob) = viterbi(obs, states, start_p, trans_p, emit_p)
+    (dp_table, max_path_prob) = vt.viterbi_custom(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
         print("Actual execution did not go as long as %d steps. How to handle information gain here?" % interesting_time)
     else:
         post_expected_visits = [dp_table[interesting_time][st]["prob"] for st in states]
         print("Actual expected visits given single execution: \n" + ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
-        ig = information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
-        print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
+        #ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
+        #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
     print("=========================== Forward Backward ==========================")
-    result = fwd_bkw(obs, states, start_p, trans_p, emit_p, end_state)
+    result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
     for line in result:
         print(*line)
     print('##FORWARD##')
@@ -500,7 +518,6 @@ def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
     	#else:
     	#	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
     	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
-    
     print(p_fwd)
     print(p_bkw)
     #https://davidamos.dev/the-right-way-to-compare-floats-in-python/
