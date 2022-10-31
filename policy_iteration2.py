@@ -28,98 +28,10 @@ import numpy as np
 import pandas as pd
 import random
 import math
+import heapq 
 import matplotlib.pyplot as plt
-from scipy.stats import entropy
-from scipy.special import rel_entr, kl_div
 
 CMP_DELTA = 0.000001
-
-
-
-
-
-#adj[node] = [(edgeWeight, Neighbor)]
-class Graph:
-    def __init__(self):
-        self.adj = {}
-    
-    def insert_node(self,name):
-        self.adj[name] = []
-
-    def remove_node(self,name):
-        
-
-        #needs to be changed later for efficiency
-        #how can we quickly get the incoming edges?
-        for node in self.adj:
-            i = 0
-            for weight,v in self.adj[node]:
-                if v == name:
-                    del self.adj[node][i]
-                i += 1
-        self.adj.pop(name)
-
-    
-    def insert_edge(self,n1,n2,weight):
-        self.adj[n1] += [(weight, n2)]
-    
-    def remove_edge(self,n1,n2):
-        i = 0
-        for weight, v in self.adj[n1]:
-            if v == n2:
-                del self.adj[n1][i]
-                return weight
-            i+=1
-        
-    def print_adj(self):
-        for node in self.adj:
-            print(node + ": ", end='')
-            print(self.adj[node])     
-    
-    def adjacent_edges(self,name):
-        return self.adj[name]
-
-    def getInt(name):
-        if len(name) == 2:
-            return int(name[1])
-        return int(name[1:])
-
-    def path_cost(self, path):
-        cost = 0
-        for i in range(len(path)-1):
-            for weight, node in self.adj[path[i]]:
-                if node == path[i+1]:
-                    cost += weight
-        return cost
-
-def path_cost(path, T):
-        cost = 0
-        for i in range(len(path)-1):
-            cost += -1 * math.log(T[path[i]][path[i+1]])
-
-        return cost
-
-def path_prob(path, T):
-        prob = 1
-        for i in range(len(path)-1):
-            prob *= T[path[i]][path[i+1]]
-
-        return prob
-
-def trans_to_graph(trans_p):
-    g = Graph()
-
-    for i in range(len(trans_p)):
-        for j in range(len(trans_p[i])):
-            if i == 0:
-                g.insert_node("v"+str(j))
-            if trans_p[i][j] != 0:
-                g.insert_edge("v"+str(i),"v"+str(j), - math.log(trans_p[i][j]))
-    g.print_adj()
-    return g
-
-            
-
 
 def action_to_str(a):
     if a == -1:
@@ -213,190 +125,32 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
-def dijkstra_actions(T, start, goal,p):
-    path = dijkstra(T, start, goal)
-    path = [p[node] for node in path]
-    actions = [action_to_str(node) for node in path]
-    return actions
-
-def dijkstra(T, start, goal):
-    distances = {}
-    previous = {}
-    for node in range(len(T)):
-        distances[node] = math.inf
-        previous[node] = -1
-
+def dijkstra(trans_p, start, goal):
+    distances = [math.inf for i in range(12)]
+    previous = [math.nan for i in range(12)]
+    start = 4
     min_heap = [(0,start)]
     distances[start] = 0
     previous[start] = -1
+    goal = 2
     max_time = 11
-
-    path = []
     while(len(min_heap) != 0):
         value, curr_state = heapq.heappop(min_heap)
         if(curr_state == goal):
-            while curr_state != -1:
-                #print("State: " + str(curr_state))
-                path = [curr_state] + path
-                curr_state = previous[curr_state]
             break
-        curr_adj = T[curr_state]
-        node = 0
-        for weight in curr_adj:
-            if weight != 0:
-                weight = -1 * math.log(weight)
-                alt = distances[curr_state] + weight 
-                if alt < distances[node]:
-                    distances[node] = alt
-                    previous[node] = curr_state
-                    heapq.heappush(min_heap,(alt, node))
-            node += 1
-    
+        for i in range(12):
+            prob = trans_p[curr_state][i]
+            if(prob != 0):
+                distance = - math.log(prob)
+                alt = distances [curr_state] + distance
+                if alt < distances[i]:
+                    distances[i] = alt
+                    previous[i] = curr_state
+                    heapq.heappush(min_heap,(alt, i))
 
-    return path
-#SOURCE: https://en.wikipedia.org/wiki/Yen%27s_algorithm
-def kdijkstra(T,start,goal,K):
-    A = [(dijkstra(T,start,goal))]
+    return previous
 
-    B = []
-
-    tCopy = copy.deepcopy(T)
-    for k in range(1,K):
-        for i in range(len(A[k-1]) - 2):
-
-            spurNode = A[k-1][i]
-
-            rootPath = A[k-1][0:i]
-   
-            for p in A:
-                if rootPath == p[0:i]:
-                    T[p[i]][p[i+1]] = 0
-                    T[p[i+1]][p[i]] = 0
-                    
-
-            for rootNode in rootPath:
-                if rootNode != spurNode:
-                    #remove rootnode from trans_p
-                    for i in range(len(T)):
-                        T[i][rootNode] = 0
-                        T[rootNode][i] = 0
-            
-            spurPath = dijkstra(T,spurNode,goal)
-            
-            if(len(spurPath) == 0):
-                T = copy.deepcopy(tCopy)
-                continue
-            totalPath = rootPath + spurPath
-            totalCost = path_cost(totalPath, tCopy)
-
-            if B.count((totalCost, totalPath)) == 0:
-                heapq.heappush(B, (totalCost, totalPath))
-            
-            T = copy.deepcopy(tCopy)
-            
-
-        if len(B) == 0:
-            break
-        
-        A += [B[0][1]]
-        heapq.heappop(B)
-
-
-    T = tCopy
-    return A
-
-
-
-def kdijkstra_actions(T,start,goal,K,pi):
-    dijkstra_res = dijkstra(T,start,goal)
-    A = [dijkstra_res]
-
-    B = []
-
-    C = [([action_to_str(pi[node]) for node in dijkstra_res], path_prob(dijkstra_res,T))]
-
-
-    overall_prob = path_prob(dijkstra_res,T)
-
-    tCopy = copy.deepcopy(T)
-    for k in range(1,K):
-        for i in range(len(A[k-1]) - 2):
-
-            spurNode = A[k-1][i]
-
-            rootPath = A[k-1][0:i]
-   
-            for p in A:
-                if rootPath == p[0:i]:
-                    T[p[i]][p[i+1]] = 0
-                    T[p[i+1]][p[i]] = 0
-                    
-
-            for rootNode in rootPath:
-                if rootNode != spurNode:
-                    #remove rootnode from trans_p
-                    for i in range(len(T)):
-                        T[i][rootNode] = 0
-                        T[rootNode][i] = 0
-            
-            spurPath = dijkstra(T,spurNode,goal)
-            
-            if(len(spurPath) == 0):
-                T = copy.deepcopy(tCopy)
-                continue
-            totalPath = rootPath + spurPath
-            totalCost = path_cost(totalPath, tCopy)
-
-            if B.count((totalCost, totalPath)) == 0:
-                heapq.heappush(B, (totalCost, totalPath))
-                #print("Total path " + str(totalPath))
-
-            T = copy.deepcopy(tCopy)
-
-        if len(B) == 0:
-            break
-        
-
-        #Check for a repeat
-        #if its a repeat then add the costs together and only add one into A
-        #increase K
-        curr_prob = path_prob(B[0][1],T)
-        overall_prob += curr_prob
-        A.append(B[0][1])
-
-        actions = [action_to_str(pi[node]) for node in B[0][1]]
-
-        append = True
-
-        for i in range(len(C)):
-            curr_actions = C[i][0]
-            if curr_actions == actions:
-                C[i] = (actions, curr_prob + C[i][1])
-                K += 1
-                append = False
-                break
-        if append:
-            C.append((actions, curr_prob))
-        
-        heapq.heappop(B)
-
-
-        print("Overall prob " + str(overall_prob))
-        print(C)
-
-        if(k == K and overall_prob <= .8):
-            K *= 2
-
-
-    T = tCopy
-
-    # for i in range(len(A)):
-    #     action_path = [pi[node] for node in A[i]]
-    #     actions = actions + [[action_to_str(node) for node in action_path]]
-    return A
-
-
-def main_iterative():
+def main_iterative(obs = []):
     """Finding the solution using the iterative approach
 
     """
@@ -458,12 +212,12 @@ def main_iterative():
     print("Policy: ")
     print([int(i) for i in p])
     print("Markov Chain:")
-    markov_chain = hlp.to_markov_chain([int(i) for i in p], T, 12)
+    markov_chain = to_markov_chain([int(i) for i in p], T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df)
-
+    
     #set terminal state
-    markov_chain[7][7]=1.0
+    markov_chain[7][7]=1.0 
     #set start state
     state = [
         [0.0,0.0,0.0,0.0,
@@ -479,8 +233,8 @@ def main_iterative():
     print("Stationary Distribution")
     print(state)
     state_history_df = pd.DataFrame(state_history)
-    #state_history_df.plot()
-    #plt.show()
+    state_history_df.plot()
+    plt.show()
     print(state_history_df)
     print("================================================================")
     start_pos = 4
@@ -503,44 +257,18 @@ def main_iterative():
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    
-
-    
-    
-    # print("=======================Graph==========================")
-   
-    # graph = trans_to_graph(trans_p)
-    print("=======================Dijkstra==========================")
-    #print(trans_p)
-
-    # g = trans_to_graph(trans_p)
-    # D = dijkstra(g,"v4","v7")
-    D = (dijkstra(trans_p,4,7))
-    print(D)
-    print(path_prob(D,trans_p))
-
-    print("=======================KDijkstra==========================")
-
-
-
-    A = kdijkstra_actions(trans_p, 4, 7, 10,p)
-
-    print(A)
-
-
-    print("=======================Trans==========================")
-    
-    print(trans_p[6])
-
-    print("====================== A Priori Analysis ====================")
+    print("========================= Dijkstra's =========================")
+    # print("Distances")
+    # print(distances)
+    # print(trans_p)
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(states, start_p, T, p, interesting_time)
     print("Expected visits: \n" + ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
     print("Sum of expected visits should = 1 + t. %.2f == %d." % (sum(prior_expected_visits), 1+interesting_time) )
-    if not obs:
+    if (not(obs)):
         print("====================== Executing Policy ======================")
-        obs = hlp.execute_policy(p, T, start_pos, 12)
+        obs = execute_policy(p, T, start_pos, 12)
         #obs = [0,0,1,-1]
     else:
         print("===================== Not Executing Policy ===================")
@@ -555,19 +283,9 @@ def main_iterative():
     # obs needs positive indices for viterbi alg implementation below
     #obs_original = obs
     obs = [obs[i]+1 for i in range(len(obs))]
-    
-    end_state = 7
-    trans_p[end_state][end_state]= 1.0 #setting terminal state?
-    
-    trans_p_df = pd.DataFrame(trans_p)
-    emit_p_df = pd.DataFrame(emit_p)
     print(obs)
-    print(states)
-    print(start_p)
-    print(trans_p_df)
-    print(emit_p_df)
     print("=========================== VITERBI ==========================")
-    (dp_table, max_path_prob) = vt.viterbi_custom(obs, states, start_p, trans_p, emit_p)
+    (dp_table, max_path_prob) = viterbi(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
         print("Actual execution did not go as long as %d steps. How to handle information gain here?" % interesting_time)
     else:
@@ -614,6 +332,12 @@ def main_iterative():
     for i in range(len(p)):
         print(kl_div(p[i], q[i]))
         print(sum(kl_div(p[i], q[i])))
+
+def to_markov_chain(p, T, max_t):
+	result = []
+	for t in range(max_t):
+		result.append([row[p[t]] for row in T[t][:]])
+	return result
 
 def main():
     main_iterative()
