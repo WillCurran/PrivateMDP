@@ -34,6 +34,7 @@ from scipy.special import rel_entr, kl_div
 import Forward_Backward_Algiorithm_wikipedia as fb
 import Viterbi_Algorithm_wikipedia as vt
 import helpers as hlp
+import dijkstras as dk
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -196,10 +197,22 @@ def main_iterative(obs = []):
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    print("========================= Dijkstra's =========================")
-    # print("Distances")
-    # print(distances)
+    
+    print("=======================Dijkstra==========================")
     # print(trans_p)
+
+    # g = trans_to_graph(trans_p)
+    # D = dijkstra(g,"v4","v7")
+    D = (dk.dijkstra(trans_p, 11, 3, None, 3))
+    print(D)
+    print(dk.path_prob(D, trans_p))
+
+    print("=======================KDijkstra==========================")
+
+    A = dk.kdijkstra_actions(trans_p, 11, 3, 10, p, 2)
+
+    print(*A, sep="\n")
+
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(states, start_p, T, p, interesting_time)
@@ -258,10 +271,10 @@ def main_iterative(obs = []):
     #convert dictionary to list
     p = []
     for i in range(len(obs)):
-    	val_ls = []
-    	for key, val in result[2][i].items():
-    		val_ls.append(val)
-    	p.append(val_ls)
+        val_ls = []
+        for key, val in result[2][i].items():
+            val_ls.append(val)
+            p.append(val_ls)
     q = state_history[:len(obs)]
     
     #https://stackoverflow.com/questions/63369974/3-functions-for-computing-relative-entropy-in-scipy-whats-the-difference
