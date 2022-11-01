@@ -159,14 +159,6 @@ def dijkstra(trans_p, start, goal):
 
     return previous
 
-def generate_naive_paths():
-    """Generate all action sequences, then narrow down
-    based on 
-
-    Goal: gain intuition on how to create a smarter generator of observation strings
-    """
-    pass
-
 def main():
     print("Calling main function in helpers.py")
 
