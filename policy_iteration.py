@@ -49,7 +49,7 @@ def return_expected_action(u, T, v):
     """Return the expected action.
 
     It returns an action based on the
-    expected utility of doing a in state s, 
+    expected utility of doing a in state s,
     according to T and u. This action is
     the one that maximize the expected
     utility.
@@ -79,10 +79,10 @@ def print_policy(p, shape):
     policy_string = ""
     for row in range(shape[0]):
         for col in range(shape[1]):
-            if(p[counter] == -1): policy_string += " *  "            
+            if(p[counter] == -1): policy_string += " *  "
             elif(p[counter] == 0): policy_string += " ^  "
             elif(p[counter] == 1): policy_string += " <  "
-            elif(p[counter] == 2): policy_string += " v  "           
+            elif(p[counter] == 2): policy_string += " v  "
             elif(p[counter] == 3): policy_string += " >  "
             elif(np.isnan(p[counter])): policy_string += " #  "
             counter += 1
@@ -131,7 +131,7 @@ def main_iterative(obs = []):
                 v = np.zeros((1,12))
                 v[0,s] = 1.0
                 #2- Policy improvement
-                a = return_expected_action(u, T, v)         
+                a = return_expected_action(u, T, v)
                 if a != p[s]: p[s] = a
         print_policy(p, shape=(3,4))
 
@@ -154,7 +154,6 @@ def main_iterative(obs = []):
     markov_chain = hlp.to_markov_chain(policy, T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df)
-    
     #set obstacles to loop
     markov_chain[5][5]=1.0
     #set terminal state to loop
@@ -199,7 +198,7 @@ def main_iterative(obs = []):
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
             emit_p[i][int(p[i])+1] = 1.0
-    
+
     print("=======================Dijkstra==========================")
     # print(trans_p)
 
@@ -237,14 +236,13 @@ def main_iterative(obs = []):
     # obs needs positive indices for viterbi alg implementation below
     #obs_original = obs
     obs = [obs[i]+1 for i in range(len(obs))]
-    
+
     #Set obstacle states to loop
     trans_p[5][5]= 1.0
     #Set Terminal states to loop
     trans_p[7][7]= 1.0
     end_state = 3
     trans_p[end_state][end_state]= 1.0
-    
     trans_p_df = pd.DataFrame(trans_p)
     emit_p_df = pd.DataFrame(emit_p)
     print("##OBSERVATIONS##")
@@ -253,7 +251,7 @@ def main_iterative(obs = []):
     print(states)
     print("##STARTING DISTRIBUTION##")
     print(start_p)
-    print("##TRANSITION DISTRIBUTION##")                    
+    print("##TRANSITION DISTRIBUTION##")
     print(trans_p_df)
     print("##EMISSIONS DISTRIBUTION##")
     print(emit_p_df)
@@ -277,7 +275,7 @@ def main_iterative(obs = []):
     print(pd.DataFrame(result[1]))
     print('##POSTERIOR##')
     print(pd.DataFrame(result[2]))
-    
+
     #p = [i.values() for i in result[2]]
     #convert dictionary to list
     p = []

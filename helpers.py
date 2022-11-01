@@ -1,6 +1,6 @@
-import numpy as np
 import math
 import random
+import numpy as np
 
 CMP_DELTA = 0.000001
 
@@ -133,31 +133,6 @@ def get_expected_visits(states, start_p, T, p, t):
             curr_p[st] = next_p[st]
         print("time=%d : %s" % (i, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
     return curr_p
-
-def dijkstra(trans_p, start, goal):
-    distances = [math.inf for i in range(12)]
-    previous = [math.nan for i in range(12)]
-    start = 4
-    min_heap = [(0,start)]
-    distances[start] = 0
-    previous[start] = -1
-    goal = 2
-    max_time = 11
-    while len(min_heap) != 0:
-        value, curr_state = heapq.heappop(min_heap)
-        if curr_state == goal:
-            break
-        for i in range(12):
-            prob = trans_p[curr_state][i]
-            if prob != 0:
-                distance = - math.log(prob)
-                alt = distances [curr_state] + distance
-                if alt < distances[i]:
-                    distances[i] = alt
-                    previous[i] = curr_state
-                    heapq.heappush(min_heap,(alt, i))
-
-    return previous
 
 def main():
     print("Calling main function in helpers.py")

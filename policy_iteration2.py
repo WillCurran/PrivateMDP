@@ -22,11 +22,10 @@
 #SOFTWARE.
 
 #Example of the policy iteration algorithm.
-
+import math
+import random
 import numpy as np
 import pandas as pd
-import random
-import math
 import matplotlib.pyplot as plt
 from scipy.stats import entropy
 from scipy.special import rel_entr, kl_div
@@ -168,7 +167,7 @@ def main_iterative(obs = []):
                                 for state_row in state]
         state_history.append(next_state[0])
         state = next_state
-    print("Stationary Distribution")
+    print("Stationary Distribution:")
     print(state)
     state_history_df = pd.DataFrame(state_history)
     #state_history_df.plot()

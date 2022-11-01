@@ -1,7 +1,7 @@
 #SOURCE: https://en.wikipedia.org/wiki/Forward%E2%80%93backward_algorithm
+import math
 import numpy as np
 import pandas as pd
-import math
 
 def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_st):
     # Forward part of the algorithm
@@ -51,7 +51,7 @@ def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_s
     print(p_fwd)
     print(p_bkw)
     #https://davidamos.dev/the-right-way-to-compare-floats-in-python/
-    assert math.isclose(p_fwd, p_bkw)     
+    assert math.isclose(p_fwd, p_bkw)
     return fwd, bkw, posterior
 def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
     # Forward part of the algorithm
@@ -101,29 +101,25 @@ def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
     print(p_fwd)
     print(p_bkw)
     #https://davidamos.dev/the-right-way-to-compare-floats-in-python/
-    assert math.isclose(p_fwd, p_bkw)     
+    assert math.isclose(p_fwd, p_bkw)
     return fwd, bkw, posterior
-    
+
 def example():
     end_state = 'E'
-
     states = ('Healthy', 'Fever')
     observations = ('normal', 'cold', 'dizzy')
     #observations = ('dizzy', 'cold', 'normal')
     #observations = ('dizzy', 'dizzy', 'dizzy')
-    
+
     start_probability = {'Healthy': 0.6, 'Fever': 0.4}
-     
     transition_probability = {
        'Healthy' : {'Healthy': 0.69, 'Fever': 0.3, 'E': 0.01},
        'Fever' : {'Healthy': 0.4, 'Fever': 0.59, 'E': 0.01},
-       }
-     
+    }
     emission_probability = {
        'Healthy' : {'normal': 0.5, 'cold': 0.4, 'dizzy': 0.1},
        'Fever' : {'normal': 0.1, 'cold': 0.3, 'dizzy': 0.6},
        }
-       
     return fwd_bkw(observations,
                    states,
                    start_probability,
@@ -132,23 +128,17 @@ def example():
                    end_state)
 def example2():
     end_state = 'Z'
-
     states = ('A', 'B')
-     
     observations = ('a', 'b', 'c', 'a')
-     
     start_probability = {'A': 0.6, 'B': 0.4}
-     
     transition_probability = {
        'A' : {'A': 0.69, 'B': 0.30, 'Z': 0.01},
        'B' : {'A': 0.40, 'B': 0.59, 'Z': 0.01},
-       }
-     
+    }
     emission_probability = {
        'A' : {'a': 0.1, 'b': 0.4, 'c': 0.5},
        'B' : {'a': 0.6, 'b': 0.3, 'c': 0.1},
-       }
-       
+    }
     return fwd_bkw(observations,
                    states,
                    start_probability,
@@ -157,25 +147,19 @@ def example2():
                    end_state)
 def example3():
     end_state = '-1'
-
     states = ('0', '1','2')
-     
     observations = ('0', '1', '2','0')
-     
     start_probability = {'0': 0.6, '1': 0.4, '2':0.0}
-     
     transition_probability = {
        '0' : {'0': 0.5, '1': 0.3, '2':0.1, '-1': 0.1},
        '1' : {'0': 0.4, '1': 0.4, '2':0.1, '-1': 0.1},
        '2' : {'0': 0.3, '1': 0.3, '2':0.0, '-1': 0.4},
        }
-     
     emission_probability = {
        '0' : {'0': 0.1, '1': 0.4, '2': 0.5},
        '1' : {'0': 0.6, '1': 0.3, '2': 0.1},
        '2' : {'0': 0.3, '1': 0.3, '2': 0.3},
        }
-       
     return fwd_bkw(observations,
                    states,
                    start_probability,
@@ -188,35 +172,34 @@ def example4():
     states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     start_p = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     trans_p = [
-		[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.7, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.3, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0, 0.0, 0.3], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.7, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.7, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.3, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.4, 0.0, 0.0, 0.0, 0.3],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.7, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
     ]
     trans_p[end_state][end_state]= 1.0 #setting terminal state
     emit_p = [
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 1.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 1.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 1.0, 0.0, 0.0, 0.0], 
-		[1.0, 0.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 1.0, 0.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0], 
-		[0.0, 0.0, 1.0, 0.0, 0.0]
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0, 0.0]
     ]
-       
     return fwd_bkw(tuple(obs),
                    states,
                    start_p,
@@ -234,6 +217,6 @@ def main():
     print(pd.DataFrame(result[1]))
     print('##POSTERIOR##')
     print(pd.DataFrame(result[2]))
-    
+
 if __name__ == "__main__":
     main()
