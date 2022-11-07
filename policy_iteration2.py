@@ -151,7 +151,7 @@ def main_iterative(obs = []):
     print("Markov Chain:")
     markov_chain = hlp.to_markov_chain([int(i) for i in p], T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
-    print(markov_chain_df)
+    print(markov_chain_df.to_string())
 
     #set terminal state
     markov_chain[7][7]=1.0
@@ -172,7 +172,7 @@ def main_iterative(obs = []):
     state_history_df = pd.DataFrame(state_history)
     #state_history_df.plot()
     #plt.show()
-    print(state_history_df)
+    print(state_history_df.to_string())
     print("================================================================")
     start_pos = 4
     states = [i for i in range(12)]
@@ -233,9 +233,9 @@ def main_iterative(obs = []):
     print("##STARTING DISTRIBUTION##")
     print(start_p)
     print("##TRANSITION DISTRIBUTION##")
-    print(trans_p_df)
+    print(trans_p_df.to_string())
     print("##EMISSIONS DISTRIBUTION##")
-    print(emit_p_df)
+    print(emit_p_df.to_string())
     print("=========================== VITERBI ==========================")
     (dp_table, max_path_prob) = vt.viterbi_custom(obs, states, start_p, trans_p, emit_p)
     if interesting_time >= len(dp_table):
@@ -248,14 +248,14 @@ def main_iterative(obs = []):
         #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
     print("=========================== Forward Backward ==========================")
     result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
-    for line in result:
-        print(*line)
+    #for line in result:
+    #    print(*line)
     print('##FORWARD##')
-    print(pd.DataFrame(result[0]))
+    print(pd.DataFrame(result[0]).to_string())
     print('##BACKWARD##')
-    print(pd.DataFrame(result[1]))
+    print(pd.DataFrame(result[1]).to_string())
     print('##POSTERIOR##')
-    print(pd.DataFrame(result[2]))
+    print(pd.DataFrame(result[2]).to_string())
     print("==================== KL Divergence/Relative Entropy ===================")
     #p = [i.values() for i in result[2]]
     #convert dictionary to list
@@ -273,9 +273,9 @@ def main_iterative(obs = []):
 
     #https://stackoverflow.com/questions/63369974/3-functions-for-computing-relative-entropy-in-scipy-whats-the-difference
     print('##ACTUAL DISTRIBUTION##')
-    print(pd.DataFrame(p))
+    print(pd.DataFrame(p).to_string())
     print('##REFERENCE DISTRIBUTION##')
-    print(pd.DataFrame(q))
+    print(pd.DataFrame(q).to_string())
     print('##ENTROPY##')
     for i in range(rows):
         print(entropy(p[i], q[i]))
@@ -294,9 +294,20 @@ def main_iterative(obs = []):
     expected_excess_surprise = [[0]*cols for i in range(rows)]
     for i in range(rows):
         for j in range(cols):
-            _p[i][j] = [p[i][j],1 - p[i][j]]
-            _q[i][j] = [q[i][j],1 - q[i][j]]
+            p_i_j = p[i][j]
+            q_i_j = q[i][j]
+
+            if p_i_j > 1.0:
+                p_i_j = 1.0
+
+            if q_i_j > 1.0:
+                q_i_j = 1.0
+
+            _p[i][j] = [p_i_j,1.0 - p_i_j]
+            _q[i][j] = [q_i_j,1.0 - q_i_j]
             expected_excess_surprise[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+    print(pd.DataFrame(_p).to_string())
+    print(pd.DataFrame(_q).to_string())
     print(pd.DataFrame(expected_excess_surprise).to_string())
 def main():
     main_iterative()
