@@ -286,6 +286,10 @@ def main_iterative(obs = []):
         p.append(val_ls)
     q = state_history[:len(obs)]
     print(obs)
+
+    rows = len(p)
+    cols = len(p[0])
+
     #https://stackoverflow.com/questions/63369974/3-functions-for-computing-relative-entropy-in-scipy-whats-the-difference
     print('##ACTUAL DISTRIBUTION##')
     print(pd.DataFrame(p))
@@ -302,6 +306,18 @@ def main_iterative(obs = []):
     for i in range(len(p)):
         print(kl_div(p[i], q[i]))
         print(sum(kl_div(p[i], q[i])))
+
+    print("==================== KL Divergence for each state ===================")
+
+    _p = [[0]*cols for i in range(rows)]
+    _q = [[0]*cols for i in range(rows)]
+    expected_excess_surprise = [[0]*cols for i in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            _p[i][j] = [p[i][j],1 - p[i][j]]
+            _q[i][j] = [q[i][j],1 - q[i][j]]
+            expected_excess_surprise[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+    print(pd.DataFrame(expected_excess_surprise).to_string())
 
 def main():
     main_iterative()

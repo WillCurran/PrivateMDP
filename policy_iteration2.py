@@ -256,35 +256,48 @@ def main_iterative(obs = []):
     print(pd.DataFrame(result[1]))
     print('##POSTERIOR##')
     print(pd.DataFrame(result[2]))
-    
     print("==================== KL Divergence/Relative Entropy ===================")
     #p = [i.values() for i in result[2]]
     #convert dictionary to list
     p = []
     for i in range(len(obs)):
-    	val_ls = []
-    	for key, val in result[2][i].items():
-    		val_ls.append(val)
-    	p.append(val_ls)
+        val_ls = []
+        for key, val in result[2][i].items():
+            val_ls.append(val)
+        p.append(val_ls)
     q = state_history[:len(obs)]
-    
+    print(obs)
+
+    rows = len(p)
+    cols = len(p[0])
+
     #https://stackoverflow.com/questions/63369974/3-functions-for-computing-relative-entropy-in-scipy-whats-the-difference
     print('##ACTUAL DISTRIBUTION##')
     print(pd.DataFrame(p))
     print('##REFERENCE DISTRIBUTION##')
     print(pd.DataFrame(q))
     print('##ENTROPY##')
-    for i in range(len(p)):
+    for i in range(rows):
         print(entropy(p[i], q[i]))
     print('##RELATIVE ENTROPY##')
-    for i in range(len(p)):
+    for i in range(rows):
         print(rel_entr(p[i], q[i]))
         print(sum(rel_entr(p[i], q[i])))
     print('##KL DIVERGENCE##')
-    for i in range(len(p)):
+    for i in range(rows):
         print(kl_div(p[i], q[i]))
         print(sum(kl_div(p[i], q[i])))
+    print("==================== KL Divergence for each state ===================")
 
+    _p = [[0]*cols for i in range(rows)]
+    _q = [[0]*cols for i in range(rows)]
+    expected_excess_surprise = [[0]*cols for i in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            _p[i][j] = [p[i][j],1 - p[i][j]]
+            _q[i][j] = [q[i][j],1 - q[i][j]]
+            expected_excess_surprise[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+    print(pd.DataFrame(expected_excess_surprise).to_string())
 def main():
     main_iterative()
     #main_linalg()
