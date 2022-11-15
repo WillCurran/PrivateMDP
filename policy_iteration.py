@@ -226,6 +226,9 @@ def main_iterative(obs = []):
     else:
         print("===================== Not Executing Policy ===================")
     print(obs)
+
+    obs = A[0][0]
+
     s = "["
     for a in obs:
         s += hlp.action_to_str(a) + ", "

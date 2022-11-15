@@ -1,8 +1,7 @@
 import math
 import heapq
 import copy
-
-import helpers as hp
+import helpers as hlp
 
 def path_cost(path, T):
     cost = 0
@@ -11,14 +10,12 @@ def path_cost(path, T):
         cost += -1 * math.log(T[path[i]][path[i+1]])
     return cost
 
-
 def path_prob(path, T):
     prob = 1
     for i in range(len(path)-1):
         prob *= T[path[i]][path[i+1]]
 
     return prob
-
 
 def dijkstra(T, start, goal, prev_edge, max_repeats):
     distances = {}
@@ -67,7 +64,6 @@ def dijkstra(T, start, goal, prev_edge, max_repeats):
         curr_repeat += 1
 
     return path
-
 
 def dijkstra_retry(T, start, goal, prev_edge, curr_repeat):
     distances = {}
@@ -119,15 +115,14 @@ def dijkstra_retry(T, start, goal, prev_edge, curr_repeat):
 
     return path
 
-
 def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
     dijkstra_res = dijkstra(T, start, goal, None, 1)
     A = [dijkstra_res]
-
     B = []
 
-    C = [([hp.action_to_str(pi[node])
-          for node in dijkstra_res], path_prob(dijkstra_res, T))]
+    #C = [([hlp.action_to_str(pi[node]) for node in dijkstra_res], path_prob(dijkstra_res, T))]
+
+    C = [([int(pi[node]) for node in dijkstra_res], path_prob(dijkstra_res, T))]
 
     overall_prob = path_prob(dijkstra_res, T)
 
@@ -182,7 +177,8 @@ def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
         overall_prob += curr_prob
         A.append(B[0][1])
 
-        actions = [hp.action_to_str(pi[node]) for node in B[0][1]]
+        actions = [int(pi[node]) for node in B[0][1]]
+        actions_str = [hlp.action_to_str(pi[node]) for node in B[0][1]]
 
         append = True
 
