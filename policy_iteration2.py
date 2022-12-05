@@ -210,6 +210,7 @@ def main_iterative(obs = []):
 
     print(*A, sep="\n")
 
+    print("=======================Expected Visits==========================")
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(states, start_p, T, p, interesting_time)
@@ -323,6 +324,9 @@ def main_iterative(obs = []):
     print(pd.DataFrame(_p).to_string())
     print(pd.DataFrame(_q).to_string())
     print(pd.DataFrame(expected_excess_surprise).to_string())
+
+    print("==================== Expected Variance ===================")
+
 def main():
     main_iterative()
     #main_linalg()

@@ -48,8 +48,8 @@ def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_s
     	#	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
     	#if the terminal state cycles to itself then you don't need to make the check above.
     	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
-    print(p_fwd)
-    print(p_bkw)
+    #print(p_fwd)
+    #print(p_bkw)
     #https://davidamos.dev/the-right-way-to-compare-floats-in-python/
     assert math.isclose(p_fwd, p_bkw)
     return fwd, bkw, posterior

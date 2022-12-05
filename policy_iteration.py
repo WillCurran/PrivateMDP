@@ -30,6 +30,7 @@ import math
 import matplotlib.pyplot as plt
 from scipy.stats import entropy
 from scipy.special import rel_entr, kl_div
+import statistics
 
 import Forward_Backward_Algiorithm_wikipedia as fb
 import Viterbi_Algorithm_wikipedia as vt
@@ -210,10 +211,11 @@ def main_iterative(obs = []):
 
     print("=======================KDijkstra==========================")
 
-    A = dk.kdijkstra_actions(trans_p, start_pos, 3, 10, p, 2)
+    A = dk.kdijkstra_actions(trans_p, start_pos, 3, 10, p, 10)
 
     print(*A, sep="\n")
 
+    print("=======================Expected Visits==========================")
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(states, start_p, T, p, interesting_time)
@@ -333,6 +335,52 @@ def main_iterative(obs = []):
     print(pd.DataFrame(_q).to_string())
     print(pd.DataFrame(expected_excess_surprise).to_string())
 
+    print("==================== Expected Leakage ===================")
+
+    probs = []
+    variances = []
+    for a in A:
+        obs = a[0]
+        prob = a[1]
+        probs.append(prob)
+
+        obs = [obs[i] + 1 for i in range(len(obs))]
+        result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
+        p = []
+        for i in range(len(obs)):
+            val_ls = []
+            for key, val in result[2][i].items():
+                val_ls.append(val)
+            p.append(val_ls)
+        q = state_history[:len(obs)]
+        rows = len(p)
+        cols = len(p[0])
+        _p = [[0] * cols for i in range(rows)]
+        _q = [[0] * cols for i in range(rows)]
+        expected_variance = [[0] * cols for i in range(rows)]
+        for i in range(rows):
+            for j in range(cols):
+                p_i_j = p[i][j]
+                q_i_j = q[i][j]
+
+                if p_i_j > 1.0:
+                    p_i_j = 1.0
+
+                if q_i_j > 1.0:
+                    q_i_j = 1.0
+
+                _p[i][j] = [p_i_j, 1.0 - p_i_j]
+                _q[i][j] = [q_i_j, 1.0 - q_i_j]
+                expected_variance[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+        variances.append(expected_variance[-1][end_state])
+    print(sum(probs))
+    print(probs)
+    print(variances)
+    expected_leakage = [variances[i]*probs[i] for i in range(len(probs))]
+    print('Upper Bound:')
+    print(sum(expected_leakage + [1-sum(probs)]))
+    print('Lower Bound:')
+    print(sum(expected_leakage))
 def main():
     main_iterative()
     #main_linalg()
