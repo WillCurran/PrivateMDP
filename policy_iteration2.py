@@ -34,6 +34,7 @@ import Forward_Backward_Algiorithm_wikipedia as fb
 import Viterbi_Algorithm_wikipedia as vt
 import helpers as hlp
 import dijkstras as dk
+import hmm as hmm
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -98,7 +99,7 @@ def main_iterative(obs = []):
     T = np.load("T2.npy")
     print(T)
     print("====================== POLICY ITERATION ========================")
-    #Generate the first policy randomly
+    # Generate the first policy randomly
     # Nan=Obstacle, -1=Terminal, 0=Forward, 1=Correct
     p = np.random.randint(0, 2, size=(12)).astype(np.float32)
     #Obstacles
@@ -206,9 +207,9 @@ def main_iterative(obs = []):
 
     print("=======================KDijkstra==========================")
 
-    A = dk.kdijkstra_actions(trans_p, start_pos, 7, 10, p, 2)
+    #A = dk.kdijkstra_actions(trans_p, start_pos, 7, 10, p, 2)
 
-    print(*A, sep="\n")
+    #print(*A, sep="\n")
 
     print("=======================Expected Visits==========================")
     interesting_time = 4
@@ -224,7 +225,8 @@ def main_iterative(obs = []):
         print("===================== Not Executing Policy ===================")
     print(obs)
 
-    obs = A[0][0]
+    #obs = A[0][0]
+
     s = "["
     for a in obs:
         s += hlp.action_to_str2(a) + ", "
@@ -262,24 +264,29 @@ def main_iterative(obs = []):
         #ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
         #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
     print("=========================== Forward Backward ==========================")
-    result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
-    #for line in result:
+    # result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
+    # for line in result:
     #    print(*line)
-    print('##FORWARD##')
-    print(pd.DataFrame(result[0]).to_string())
-    print('##BACKWARD##')
-    print(pd.DataFrame(result[1]).to_string())
-    print('##POSTERIOR##')
-    print(pd.DataFrame(result[2]).to_string())
-    print("==================== KL Divergence/Relative Entropy ===================")
-    #p = [i.values() for i in result[2]]
-    #convert dictionary to list
-    p = []
-    for i in range(len(obs)):
-        val_ls = []
-        for key, val in result[2][i].items():
-            val_ls.append(val)
-        p.append(val_ls)
+    # print('##FORWARD##')
+    # print(pd.DataFrame(result[0]).to_string())
+    # print('##BACKWARD##')
+    # print(pd.DataFrame(result[1]).to_string())
+    # print('##POSTERIOR##')
+    # print(pd.DataFrame(result[2]).to_string())
+
+    # p = [i.values() for i in result[2]]
+    # convert dictionary to list
+    # p = []
+    # for i in range(len(obs)):
+    #    val_ls = []
+    #    for key, val in result[2][i].items():
+    #        val_ls.append(val)
+    #    p.append(val_ls)
+
+    russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+
+    p = russelhmm.forward_backward(obs)[1:]
+
     q = state_history[:len(obs)]
     print(obs)
 
