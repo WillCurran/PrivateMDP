@@ -152,6 +152,7 @@ def main_iterative(obs = []):
     print("==================MDP + Policy = Markov Chain ==================")
     print("Policy: ")
     policy = [np.NaN if np.isnan(i) else int(i) for i in p]
+    print(policy)
     print("Markov Chain:")
     markov_chain = hlp.to_markov_chain(policy, T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
@@ -206,13 +207,14 @@ def main_iterative(obs = []):
 
     # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
-    D = (dk.dijkstra(trans_p, start_pos, 3, None, 3))
+    end_pos = 3
+    D = (dk.dijkstra(trans_p, start_pos, end_pos, None, 3))
     print(D)
     print(dk.path_prob(D, trans_p))
 
     print("=======================KDijkstra==========================")
 
-    A = dk.kdijkstra_actions(trans_p, start_pos, 3, 10, p, 10)
+    A = dk.kdijkstra_actions(trans_p, start_pos, end_pos, 10, p, 10)
 
     print(*A, sep="\n")
 
