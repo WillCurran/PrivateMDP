@@ -1,6 +1,8 @@
 import math
 import random
 import numpy as np
+import pandas as pd
+from tabulate import tabulate
 
 CMP_DELTA = 0.000001
 
@@ -133,6 +135,15 @@ def get_expected_visits(states, start_p, T, p, t):
             curr_p[st] = next_p[st]
         print("time=%d : %s" % (i, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
     return curr_p
+
+def print_world(arr, shape):
+    table = np.reshape(arr,shape)
+    headers = np.arange(shape[1])+1
+    df = pd.DataFrame(table)
+    row_labels = np.flip(np.arange(shape[0]))+1
+    df.index = row_labels
+    
+    print(tabulate(df,headers=headers))
 
 def main():
     print("Calling main function in helpers.py")

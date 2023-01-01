@@ -246,7 +246,7 @@ def main_iterative(obs = []):
     print("##OBSERVATIONS##")
     print(obs)
     print("##STATES##")
-    print(states)
+    hlp.print_world(states, shape=(3,4))
     print("##STARTING DISTRIBUTION##")
     print(start_p)
     print("##TRANSITION DISTRIBUTION##")

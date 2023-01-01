@@ -31,12 +31,14 @@ import matplotlib.pyplot as plt
 from scipy.stats import entropy
 from scipy.special import rel_entr, kl_div
 import statistics
+from tabulate import tabulate
 
 import Forward_Backward_Algiorithm_wikipedia as fb
 import Viterbi_Algorithm_wikipedia as vt
 import helpers as hlp
 import dijkstras as dk
 import hmm as hmm
+
 
 def return_policy_evaluation(p, u, r, T, gamma):
     for s in range(12):
@@ -256,7 +258,7 @@ def main_iterative(obs = []):
     print("##OBSERVATIONS##")
     print(obs)
     print("##STATES##")
-    print(states)
+    hlp.print_world(states, shape=(3,4))
     print("##STARTING DISTRIBUTION##")
     print(start_p)
     print("##TRANSITION DISTRIBUTION##")
