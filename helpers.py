@@ -1,10 +1,14 @@
 import math
 import random
-import numpy as np
-import pandas as pd
+
 from tabulate import tabulate
 
+import numpy as np
+import pandas as pd
+
+
 CMP_DELTA = 0.000001
+
 
 def information_gain(Q, P, s, path_probability):
     """Calculate a bound for expected(?) information gain given one execution of viturbi on one string of observations
@@ -39,8 +43,10 @@ def information_gain(Q, P, s, path_probability):
     # what we know based on paths we tested.
     known_rel_entropy = rel_entropy
     # worst case expected entropy, given what we know.
-    worst_expected_entropy = path_probability * rel_entropy + (1.0 - path_probability) * max_remaining_info
+    worst_expected_entropy = path_probability * rel_entropy + \
+        (1.0 - path_probability) * max_remaining_info
     return (known_rel_entropy, worst_expected_entropy)
+
 
 def action_to_str(a):
     if a == -1:
@@ -55,6 +61,7 @@ def action_to_str(a):
         return ">"
     return "#"
 
+
 def action_to_str2(a):
     result = '#'
     if a == -1:
@@ -65,14 +72,15 @@ def action_to_str2(a):
         result = "|"
     return result
 
+
 def take_action(curr_state, action, T):
     """Return the next state and the given current state and the action chosen
 
     """
-    coin  = random.random()
+    coin = random.random()
     # coin = 0.5
     # 12 possible next states
-    next_states = T[curr_state, : , int(action)]
+    next_states = T[curr_state, :, int(action)]
     prob_counter = 0.0
     # randomly take next action based on weights
     for state, prob in enumerate(next_states):
@@ -80,6 +88,7 @@ def take_action(curr_state, action, T):
             return state
         prob_counter += prob
     return -1
+
 
 def execute_policy(p, T, start, max_t):
     """Place an agent in the environment and generate a stream of actions
@@ -95,12 +104,14 @@ def execute_policy(p, T, start, max_t):
         curr_state = take_action(curr_state, p[curr_state], T)
     return output
 
+
 def to_markov_chain(p, T, max_t):
     result = [[0]*max_t]*max_t
     for t in range(max_t):
         if not np.isnan(p[t]):
             result[t] = [row[p[t]] for row in T[t][:]]
     return result
+
 
 def get_expected_visits(states, start_p, T, p, t):
     """Get number of extpected visits of each state after t steps
@@ -125,28 +136,33 @@ def get_expected_visits(states, start_p, T, p, t):
 
     # initial distribution tells us where we will be at time=0
     curr_p = [start_p[j] for j in range(12)]
-    print("time=%d : %s" % (0, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
-    for i in range(1,t+1):
+    print("time=%d : %s" % (0, ', '.join(
+        ["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
+    for i in range(1, t+1):
         next_p = [0.0 for j in range(12)]
         for st in states:
             for next_st in states:
                 next_p[next_st] += curr_p[st] * trans_p[st][next_st]
         for st in states:
             curr_p[st] = next_p[st]
-        print("time=%d : %s" % (i, ', '.join(["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
+        print("time=%d : %s" % (i, ', '.join(
+            ["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
     return curr_p
 
+
 def print_world(arr, shape):
-    table = np.reshape(arr,shape)
+    table = np.reshape(arr, shape)
     headers = np.arange(shape[1])+1
     df = pd.DataFrame(table)
     row_labels = np.flip(np.arange(shape[0]))+1
     df.index = row_labels
-    
-    print(tabulate(df,headers=headers))
+
+    print(tabulate(df, headers=headers))
+
 
 def main():
     print("Calling main function in helpers.py")
+
 
 if __name__ == "__main__":
     main()
