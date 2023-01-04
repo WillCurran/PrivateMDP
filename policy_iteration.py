@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+#https://github.com/mpatacchiola/dissecting-reinforcement-learning
 # MIT License
 # Copyright (c) 2017 Massimiliano Patacchiola
 #
@@ -181,8 +181,8 @@ def main_iterative(obs=[]):
     # set start state
     state = [
         [0.0, 0.0, 0.0, 0.0,
-         1.0, 0.0, 0.0, 0.0,
-         0.0, 0.0, 0.0, 0.0]]
+         0.0, 0.0, 0.0, 0.0,
+         1.0, 0.0, 0.0, 0.0]]
     state_history = [state[0]]
     for x in range(20):
         next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
@@ -197,7 +197,7 @@ def main_iterative(obs=[]):
     # plt.show()
     print(state_history_df.to_string())
     print("================================================================")
-    start_pos = 4
+    start_pos = 8
     states = [i for i in range(12)]
     start_p = [0.0 for i in range(12)]
     start_p[start_pos] = 1.0
