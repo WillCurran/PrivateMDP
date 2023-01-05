@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#https://github.com/mpatacchiola/dissecting-reinforcement-learning
+# https://github.com/mpatacchiola/dissecting-reinforcement-learning
 # MIT License
 # Copyright (c) 2017 Massimiliano Patacchiola
 #
@@ -48,7 +48,7 @@ def return_policy_evaluation(p, u, r, T, gamma):
             v[0, s] = 1.0
             action = int(p[s])
             u[s] = r[s] + gamma * \
-                np.sum(np.multiply(u, np.dot(v, T[:, :, action])))
+                np.sum(np.multiply(u, np.dot(v, T[:,:, action])))
     return u
 
 
@@ -69,7 +69,7 @@ def return_expected_action(u, T, v):
     for action in range(4):
         # Expected utility of doing a in state s, according to T and u.
         actions_array[action] = np.sum(
-            np.multiply(u, np.dot(v, T[:, :, action])))
+            np.multiply(u, np.dot(v, T[:,:, action])))
     return np.argmax(actions_array)
 
 
@@ -124,13 +124,13 @@ def main_iterative(obs=[]):
     p[3] = p[7] = -1
 
     # Utility vectors
-    u = np.array([0.0, 0.0, 0.0,  0.0,
-                  0.0, 0.0, 0.0,  0.0,
-                  0.0, 0.0, 0.0,  0.0])
+    u = np.array([0.0, 0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0, 0.0])
 
     # Reward vector
-    r = np.array([-0.04, -0.04, -0.04,  +1.0,
-                  -0.04,   0.0, -0.04,  -1.0,
+    r = np.array([-0.04, -0.04, -0.04, +1.0,
+                  -0.04, 0.0, -0.04, -1.0,
                   -0.04, -0.04, -0.04, -0.04])
 
     while True:
@@ -216,7 +216,7 @@ def main_iterative(obs=[]):
         emit_p.append([0.0 for j in range(5)])
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
-            emit_p[i][int(p[i])+1] = 1.0
+            emit_p[i][int(p[i]) + 1] = 1.0
 
     print("=======================Dijkstra==========================")
     # print(trans_p)
@@ -234,24 +234,25 @@ def main_iterative(obs=[]):
 
     print(*A, sep="\n")
 
-    print("=======================Expected Visits==========================")
+    print("======================= Expected Visits ==========================")
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
-          (sum(prior_expected_visits), 1+interesting_time))
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
+          (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
         obs = hlp.execute_policy(p, T, start_pos, 12)
-        #obs = [0,0,1,-1]
+        print("Observations from policy execution")
+        print(obs)
     else:
         print("===================== Not Executing Policy ===================")
-    print(obs)
-
+    print("====================== Policy Translation ======================")
     obs = A[0][0]
+    print(obs)
 
     s = "["
     for a in obs:
@@ -261,9 +262,10 @@ def main_iterative(obs=[]):
     else:
         print("[]")
     # obs needs positive indices for viterbi alg implementation below
-    #obs_original = obs
-    obs = [obs[i]+1 for i in range(len(obs))]
-
+    # obs_original = obs
+    obs = [obs[i] + 1 for i in range(len(obs))]
+    print(obs)
+    print("====================== Hidden Markov Model ======================")
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
@@ -290,13 +292,13 @@ def main_iterative(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
-        #ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
-        #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
+        # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
+        # print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
     print("=========================== Forward Backward ==========================")
-    #result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
+    # result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
     # for line in result:
     #    print(*line)
     # print('##FORWARD##')
@@ -306,9 +308,9 @@ def main_iterative(obs=[]):
     # print('##POSTERIOR##')
     # print(pd.DataFrame(result[2]).to_string())
 
-    #p = [i.values() for i in result[2]]
+    # p = [i.values() for i in result[2]]
     # convert dictionary to list
-    #p = []
+    # p = []
     # for i in range(len(obs)):
     #    val_ls = []
     #    for key, val in result[2][i].items():
@@ -344,9 +346,9 @@ def main_iterative(obs=[]):
 
     print("==================== KL Divergence for each state ===================")
 
-    _p = [[0]*cols for i in range(rows)]
-    _q = [[0]*cols for i in range(rows)]
-    expected_excess_surprise = [[0]*cols for i in range(rows)]
+    _p = [[0] * cols for i in range(rows)]
+    _q = [[0] * cols for i in range(rows)]
+    expected_excess_surprise = [[0] * cols for i in range(rows)]
     for i in range(rows):
         for j in range(cols):
             p_i_j = p[i][j]
@@ -407,9 +409,9 @@ def main_iterative(obs=[]):
     print(sum(probs))
     print(probs)
     print(variances)
-    expected_leakage = [variances[i]*probs[i] for i in range(len(probs))]
+    expected_leakage = [variances[i] * probs[i] for i in range(len(probs))]
     print('Upper Bound:')
-    print(sum(expected_leakage + [1-sum(probs)]))
+    print(sum(expected_leakage + [1 - sum(probs)]))
     print('Lower Bound:')
     print(sum(expected_leakage))
 

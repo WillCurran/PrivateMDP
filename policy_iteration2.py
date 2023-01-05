@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#https://github.com/mpatacchiola/dissecting-reinforcement-learning
+# https://github.com/mpatacchiola/dissecting-reinforcement-learning
 # MIT License
 # Copyright (c) 2017 Massimiliano Patacchiola
 #
@@ -45,7 +45,7 @@ def return_policy_evaluation(p, u, r, T, gamma):
             v[0, s] = 1.0
             action = int(p[s])
             u[s] = r[s] + gamma * \
-                np.sum(np.multiply(u, np.dot(v, T[:, :, action])))
+                np.sum(np.multiply(u, np.dot(v, T[:,:, action])))
     return u
 
 
@@ -66,7 +66,7 @@ def return_expected_action(u, T, v):
     for action in range(2):
         # Expected utility of doing a in state s, according to T and u.
         actions_array[action] = np.sum(
-            np.multiply(u, np.dot(v, T[:, :, action])))
+            np.multiply(u, np.dot(v, T[:,:, action])))
     return np.argmax(actions_array)
 
 
@@ -110,14 +110,14 @@ def main_iterative(obs=[]):
     # Nan=Obstacle, -1=Terminal, 0=Forward, 1=Correct
     p = np.random.randint(0, 2, size=(12)).astype(np.float32)
     # Obstacles
-    #p[5] = np.NaN
+    # p[5] = np.NaN
     # Terminal States
     p[7] = -1
 
     # Utility vectors
-    u = np.array([0.0, 0.0, 0.0,  0.0,
-                  0.0, 0.0, 0.0,  0.0,
-                  0.0, 0.0, 0.0,  0.0])
+    u = np.array([0.0, 0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0, 0.0,
+                  0.0, 0.0, 0.0, 0.0])
 
     # Reward vector
     r = np.array([-0.04, -0.04, -0.04, -0.04,
@@ -204,7 +204,7 @@ def main_iterative(obs=[]):
         emit_p.append([0.0 for j in range(5)])
         # TODO - make nondeterministic policy possible
         if not np.isnan(p[i]):
-            emit_p[i][int(p[i])+1] = 1.0
+            emit_p[i][int(p[i]) + 1] = 1.0
     print("=======================Dijkstra==========================")
     # print(trans_p)
 
@@ -216,28 +216,29 @@ def main_iterative(obs=[]):
 
     print("=======================KDijkstra==========================")
 
-    #A = dk.kdijkstra_actions(trans_p, start_pos, 7, 10, p, 2)
+    # A = dk.kdijkstra_actions(trans_p, start_pos, 7, 10, p, 2)
 
-    #print(*A, sep="\n")
+    # print(*A, sep="\n")
 
     print("=======================Expected Visits==========================")
     interesting_time = 4
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
         obs = hlp.execute_policy(p, T, start_pos, 12)
-        # obs = [0,0,1,-1]
+        print("Observations from policy execution")
+        print(obs)
     else:
         print("===================== Not Executing Policy ===================")
+    print("====================== Policy Translation ======================")
+    # obs = A[0][0]
     print(obs)
-
-    #obs = A[0][0]
 
     s = "["
     for a in obs:
@@ -247,9 +248,10 @@ def main_iterative(obs=[]):
     else:
         print("[]")
     # obs needs positive indices for viterbi alg implementation below
-    #obs_original = obs
-    obs = [obs[i]+1 for i in range(len(obs))]
-
+    # obs_original = obs
+    obs = [obs[i] + 1 for i in range(len(obs))]
+    print(obs)
+    print("====================== Hidden Markov Model ======================")
     end_state = 7
     trans_p[end_state][end_state] = 1.0  # setting terminal state?
 
@@ -273,11 +275,11 @@ def main_iterative(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
-        #ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
-        #print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
+        # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
+        # print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
     print("=========================== Forward Backward ==========================")
     # result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
     # for line in result:
@@ -326,9 +328,9 @@ def main_iterative(obs=[]):
         print(sum(kl_div(p[i], q[i])))
     print("==================== KL Divergence for each state ===================")
 
-    _p = [[0]*cols for i in range(rows)]
-    _q = [[0]*cols for i in range(rows)]
-    expected_excess_surprise = [[0]*cols for i in range(rows)]
+    _p = [[0] * cols for i in range(rows)]
+    _q = [[0] * cols for i in range(rows)]
+    expected_excess_surprise = [[0] * cols for i in range(rows)]
     for i in range(rows):
         for j in range(cols):
             p_i_j = p[i][j]
