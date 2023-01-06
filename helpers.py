@@ -1,3 +1,4 @@
+import itertools
 import math
 import random
 
@@ -5,7 +6,6 @@ from tabulate import tabulate
 
 import numpy as np
 import pandas as pd
-
 
 CMP_DELTA = 0.000001
 
@@ -80,7 +80,7 @@ def take_action(curr_state, action, T):
     coin = random.random()
     # coin = 0.5
     # 12 possible next states
-    next_states = T[curr_state, :, int(action)]
+    next_states = T[curr_state,:, int(action)]
     prob_counter = 0.0
     # randomly take next action based on weights
     for state, prob in enumerate(next_states):
@@ -106,11 +106,89 @@ def execute_policy(p, T, start, max_t):
 
 
 def to_markov_chain(p, T, max_t):
-    result = [[0]*max_t]*max_t
+    result = [[0] * max_t] * max_t
     for t in range(max_t):
         if not np.isnan(p[t]):
             result[t] = [row[p[t]] for row in T[t][:]]
     return result
+
+
+def equilibrium_distribution(transition_matrix):
+    """Calculate the equlibrium distribution of a transition matrix
+    
+    This should give you the equilibrium distribution of the transition 
+    matrix. It is important to note that the equilibrium distribution 
+    only exists if the transition matrix is aperiodic and irreducible, 
+    which means that it is possible to reach any state from any other 
+    state in a finite number of steps and that there is no subset of states 
+    that cannot be reached from any other state.
+    """
+    eigenvalues, eigenvectors = np.linalg.eig(transition_matrix)
+    index = np.where(np.isclose(eigenvalues, 1))[0][0]
+    result = np.conj(eigenvectors[:, index]).T
+    result = result / result.sum()
+    return result
+
+
+def enumerate_policies(mdp):
+    """enumerate all policies of an MDP
+    
+    defining the MDP as a tuple (S, A, T, R, gamma) where:
+    
+    S is the set of states
+    A is the set of actions
+    T is the transition model, which is a probability distribution over 
+    the next state given the current state and action: T(s' | s, a)
+    R is the reward function, which maps states and actions to real 
+    values: R(s, a)
+    gamma is the discount factor, which determines the importance of future 
+    rewards compared to current rewards
+    
+    Then, you can define a function that takes an MDP as input and returns a 
+    list of policies. A policy is a function that maps states to actions. 
+    To enumerate all policies, you can create a list of all possible functions
+    that map states to actions. For example, you can do this by creating a 
+    list of all possible combinations of states and actions, and then creating 
+    a function for each combination that returns the action for the corresponding 
+    state.
+    
+    EX:
+    # Define an MDP
+    mdp = (['s1', 's2', 's3'], ['a1', 'a2'], T, R, gamma)
+
+    # Enumerate the policies of the MDP
+    policies = enumerate_policies(mdp)
+    """
+    # Get the set of states and actions from the MDP
+    states = mdp[0]
+    actions = mdp[1]
+    
+    # Create a list of all possible combinations of states and actions
+    state_action_pairs = itertools.product(states, actions)
+    
+    # Define a list to store the policies
+    policies = []
+    number_of_policies = len(actions) ^ len(states)
+    # policies2 = np.zeros((number_of_policies,len(states)))
+    # Define a list to store the policies
+    policies = []
+    # Iterate over the state-action pairs
+    for (state, action) in state_action_pairs:
+    
+        # Define a policy that always returns the current action for the current state
+        def policy(state_):
+            if state_ == state:
+                return action
+            else:
+                return None
+    
+        # Add the policy to the list
+        policies.append(policy)
+    
+    policies2 = np.ndindex(len(states), len(actions))
+    
+    # Return the list of policies
+    return policies2
 
 
 def get_expected_visits(states, start_p, T, p, t):
@@ -138,7 +216,7 @@ def get_expected_visits(states, start_p, T, p, t):
     curr_p = [start_p[j] for j in range(12)]
     print("time=%d : %s" % (0, ', '.join(
         ["%.2f" % curr_p[st] for st in states]) + ": sum=%.2f" % sum(curr_p)))
-    for i in range(1, t+1):
+    for i in range(1, t + 1):
         next_p = [0.0 for j in range(12)]
         for st in states:
             for next_st in states:
@@ -152,9 +230,9 @@ def get_expected_visits(states, start_p, T, p, t):
 
 def print_world(arr, shape):
     table = np.reshape(arr, shape)
-    headers = np.arange(shape[1])+1
+    headers = np.arange(shape[1]) + 1
     df = pd.DataFrame(table)
-    row_labels = np.flip(np.arange(shape[0]))+1
+    row_labels = np.flip(np.arange(shape[0])) + 1
     df.index = row_labels
 
     print(tabulate(df, headers=headers))
