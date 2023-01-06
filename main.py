@@ -27,10 +27,10 @@ def run_russel_norvig_world():
     T, p, u, r, gamma = russel_norvig_world.main_iterative()
     print_header("a priori analysis".title())
     print_header("MDP + Policy = Markov Chain")
-    print("Policy: ")
+    print("optimal policy: ")
     policy = [np.NaN if np.isnan(i) else int(i) for i in p]
-    print(policy)
-    print("Markov Chain:")
+    russel_norvig_world.print_policy(policy, (3, 4))
+    print("markov chain:")
     markov_chain = hlp.to_markov_chain(policy, T, 12)
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df.to_string())
@@ -51,13 +51,13 @@ def run_russel_norvig_world():
                       for state_row in state]
         state_history.append(next_state[0])
         state = next_state
-    print("Stationary Distribution")
-    print(state)
+    print_header("stationary distribution".title())
+    hlp.print_world(state, (3, 4))
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
     print(state_history_df.to_string())
-    print("================================================================")
+    print_header('enumerate all policies'.title())
     start_pos = 8
     states = [i for i in range(12)]
     actions = [i for i in range(4)]
@@ -80,10 +80,11 @@ def run_russel_norvig_world():
         if not np.isnan(p[i]):
             emit_p[i][int(p[i]) + 1] = 1.0
 
-    mdp = (states, actions, T, r, gamma)
-    policies = hlp.enumerate_policies(mdp)
-    for policy in policies:
-        print(policy)
+    policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
+    print("first policy returned:")
+    russel_norvig_world.print_policy(policies[0], (3, 4))
+    print("last policy returned:")
+    russel_norvig_world.print_policy(policies[-1], (3, 4))
 
 
 def run_river_world():

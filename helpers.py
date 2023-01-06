@@ -130,7 +130,7 @@ def equilibrium_distribution(transition_matrix):
     return result
 
 
-def enumerate_policies(mdp):
+def enumerate_policies(states, actions, obstacles, terminals):
     """enumerate all policies of an MDP
     
     defining the MDP as a tuple (S, A, T, R, gamma) where:
@@ -159,36 +159,22 @@ def enumerate_policies(mdp):
     # Enumerate the policies of the MDP
     policies = enumerate_policies(mdp)
     """
-    # Get the set of states and actions from the MDP
-    states = mdp[0]
-    actions = mdp[1]
+    number_of_policies = len(actions) ** (len(states) - len(obstacles) - len(terminals))
+    # Create the 2-d array of possible selections
+    selections = [actions for i in range(len(states))]
+    for obstacle in obstacles:
+        selections[obstacle] = [np.NaN]
+    for terminal in terminals:
+        selections[terminal] = [-1]
+    # Use itertools.product to generate all possible combinations of selections
     
-    # Create a list of all possible combinations of states and actions
-    state_action_pairs = itertools.product(states, actions)
-    
-    # Define a list to store the policies
-    policies = []
-    number_of_policies = len(actions) ^ len(states)
-    # policies2 = np.zeros((number_of_policies,len(states)))
-    # Define a list to store the policies
-    policies = []
-    # Iterate over the state-action pairs
-    for (state, action) in state_action_pairs:
-    
-        # Define a policy that always returns the current action for the current state
-        def policy(state_):
-            if state_ == state:
-                return action
-            else:
-                return None
-    
-        # Add the policy to the list
-        policies.append(policy)
-    
-    policies2 = np.ndindex(len(states), len(actions))
-    
-    # Return the list of policies
-    return policies2
+    combinations = itertools.product(*selections)
+    policies = np.fromiter(combinations, dtype=object)
+    print("expected number of policies:")
+    print(number_of_policies)
+    print("actual number of policies")
+    print(len(policies))
+    return policies
 
 
 def get_expected_visits(states, start_p, T, p, t):
