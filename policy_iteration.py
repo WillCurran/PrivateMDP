@@ -164,8 +164,8 @@ def main_iterative(obs=[]):
     print(u[8:12])
     print("================================================================")
     print_policy(p, shape=(3, 4))
-    print("===================== A Priori Analysis ======================")
-    print("==================MDP + Policy = Markov Chain ==================")
+    print("======================= A Priori Analysis =======================")
+    print("================== MDP + Policy = Markov Chain ==================")
     print("Policy: ")
     policy = [np.NaN if np.isnan(i) else int(i) for i in p]
     print(policy)
@@ -179,58 +179,32 @@ def main_iterative(obs=[]):
     markov_chain[3][3] = 1.0
     markov_chain[7][7] = 1.0
     # set start state
-    state = [
-        [0.0, 0.0, 0.0, 0.0,
-         0.0, 0.0, 0.0, 0.0,
-         1.0, 0.0, 0.0, 0.0]]
-    state_history = [state[0]]
-    for x in range(20):
-        next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
-                       for markov_chain_col in zip(*markov_chain)]
-                      for state_row in state]
-        state_history.append(next_state[0])
-        state = next_state
+    starting_state = [0.0, 0.0, 0.0, 0.0,
+    		0.0, 0.0, 0.0, 0.0,
+    		1.0, 0.0, 0.0, 0.0]
+    state, state_history = hlp.stationary_distribution(markov_chain, starting_state, 20)
     print("Stationary Distribution")
     print(state)
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
     print(state_history_df.to_string())
-    print("================================================================")
-    start_pos = 8
-    states = [i for i in range(12)]
-    start_p = [0.0 for i in range(12)]
-    start_p[start_pos] = 1.0
-
-    # Viterbi needs 12x12 transition matrix
-    # Generate the one induced by the policy
-    trans_p = []
-    for i in range(12):
-        trans_p.append([0.0 for j in range(12)])
-        if not np.isnan(p[i]) and not p[i] == -1:
-            for j in range(12):
-                trans_p[i][j] = T[i, j, int(p[i])]
-    # emmission probabilities are induced by the policy
-    emit_p = []
-    for i in range(12):
-        emit_p.append([0.0 for j in range(5)])
-        # TODO - make nondeterministic policy possible
-        if not np.isnan(p[i]):
-            emit_p[i][int(p[i]) + 1] = 1.0
-
-    print("=======================Dijkstra==========================")
+    print("=========================== Create HMM ==========================")
+    start_state = 8
+    states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 4, start_state)
+    print("============================ Dijkstra ===========================")
     # print(trans_p)
 
     # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
-    end_pos = 3
-    D = (dk.dijkstra(trans_p, start_pos, end_pos, None, 3))
+    end_state = 3
+    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
     print(D)
     print(dk.path_prob(D, trans_p))
 
-    print("=======================KDijkstra==========================")
+    print("=========================== KDijkstra ===========================")
 
-    A = dk.kdijkstra_actions(trans_p, start_pos, end_pos, 10, p, 10)
+    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
 
     print(*A, sep="\n")
 
@@ -245,7 +219,7 @@ def main_iterative(obs=[]):
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
-        obs = hlp.execute_policy(p, T, start_pos, 12)
+        obs = hlp.execute_policy(p, T, start_state, 12)
         print("Observations from policy execution")
         print(obs)
     else:
@@ -256,7 +230,7 @@ def main_iterative(obs=[]):
 
     s = "["
     for a in obs:
-        s += hlp.action_to_str(a) + ", "
+        s += hlp.action_to_str_russel_norvig_world(a) + ", "
     if len(s) > 1:
         print(s[:-2] + "]")
     else:
@@ -265,7 +239,7 @@ def main_iterative(obs=[]):
     # obs_original = obs
     obs = [obs[i] + 1 for i in range(len(obs))]
     print(obs)
-    print("====================== Hidden Markov Model ======================")
+    print("=========================== Analyze HMM ==========================")
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
@@ -297,7 +271,7 @@ def main_iterative(obs=[]):
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
         # print("Information Gain on state=%d and time=%d: %.2f" % (interesting_state, interesting_time, ig))
-    print("=========================== Forward Backward ==========================")
+    print("=========================== FORWARD BACKWARD ==========================")
     # result = fb.fwd_bkw_custom(obs, states, start_p, trans_p, emit_p, end_state)
     # for line in result:
     #    print(*line)
@@ -345,24 +319,11 @@ def main_iterative(obs=[]):
         print(sum(kl_div(p[i], q[i])))
 
     print("==================== KL Divergence for each state ===================")
+    _p, _q, expected_excess_surprise = hlp.kl_divergence_for_each_state(p, q)
 
-    _p = [[0] * cols for i in range(rows)]
-    _q = [[0] * cols for i in range(rows)]
-    expected_excess_surprise = [[0] * cols for i in range(rows)]
-    for i in range(rows):
-        for j in range(cols):
-            p_i_j = p[i][j]
-            q_i_j = q[i][j]
-
-            if p_i_j > 1.0:
-                p_i_j = 1.0
-
-            if q_i_j > 1.0:
-                q_i_j = 1.0
-
-            _p[i][j] = [p_i_j, 1.0 - p_i_j]
-            _q[i][j] = [q_i_j, 1.0 - q_i_j]
-            expected_excess_surprise[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+    print(pd.DataFrame(_p).to_string())
+    print(pd.DataFrame(_q).to_string())
+    print(pd.DataFrame(expected_excess_surprise).to_string())
     print(pd.DataFrame(_p).to_string())
     print(pd.DataFrame(_q).to_string())
     print(pd.DataFrame(expected_excess_surprise).to_string())

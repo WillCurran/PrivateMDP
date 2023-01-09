@@ -26,6 +26,37 @@ def run_russel_norvig_world():
     print_header('compute optimal policy'.title())
     T, p, u, r, gamma = russel_norvig_world.main_iterative()
     print_header("a priori analysis".title())
+
+    print_header('enumerate all policies'.title())
+    start_pos = 8
+    states = [i for i in range(12)]
+    actions = [i for i in range(4)]
+    start_p = [0.0 for i in range(12)]
+    start_p[start_pos] = 1.0
+
+    policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
+    print("first policy returned:")
+    russel_norvig_world.print_policy(policies[0], (3, 4))
+    print("last policy returned:")
+    russel_norvig_world.print_policy(policies[-1], (3, 4))
+
+
+def run_river_world():
+    """Run calculation under our custom river world.
+
+    """
+    # river_world.main_iterative()
+        # Define an MDP
+
+
+def run_russel_norvig_world_optimal_policy_viterbi_path_only():
+    """Run calculation under russel and norvig world.
+
+    This version only analyzes the viterbi path using the optimal policy
+    """
+    print_header('create markov decision process and compute optimal policy'.title())
+    T, p, u, r, gamma = russel_norvig_world.main_iterative()
+    print_header("a priori analysis".title())
     print_header("MDP + Policy = Markov Chain")
     print("optimal policy: ")
     policy = [np.NaN if np.isnan(i) else int(i) for i in p]
@@ -56,14 +87,7 @@ def run_russel_norvig_world():
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
-    print(state_history_df.to_string())
-    print_header('enumerate all policies'.title())
-    start_pos = 8
-    states = [i for i in range(12)]
-    actions = [i for i in range(4)]
-    start_p = [0.0 for i in range(12)]
-    start_p[start_pos] = 1.0
-
+    print_header("create hidden markov moddel with mdp and policy".title())
     # Viterbi needs 12x12 transition matrix
     # Generate the one induced by the policy
     trans_p = []
@@ -80,20 +104,6 @@ def run_russel_norvig_world():
         if not np.isnan(p[i]):
             emit_p[i][int(p[i]) + 1] = 1.0
 
-    policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
-    print("first policy returned:")
-    russel_norvig_world.print_policy(policies[0], (3, 4))
-    print("last policy returned:")
-    russel_norvig_world.print_policy(policies[-1], (3, 4))
-
-
-def run_river_world():
-    """Run calculation under our custom river world.
-
-    """
-    # river_world.main_iterative()
-        # Define an MDP
-
 
 def main():
     print_header('markov decision process policy leakage calculation program'.title())
@@ -101,15 +111,20 @@ def main():
         print("please select an option:")
         print("1) russel and norvig world")
         print("2) river world")
+        print("3) russel and norvig world with optimal policy/viterbi path only")
         selection = input("enter your selection: ")
     
         if selection == "1":
-            print("you selected russel and norvig world.\n")
+            print("you selected option 1")
             run_russel_norvig_world()
             break
         elif selection == "2":
-            print("your selected river world.\n")
+            print("your selected option 2")
             run_river_world()
+            break
+        elif selection == "3":
+            print("you selected option 3")
+            run_russel_norvig_world_optimal_policy_viterbi_path_only()()
             break
         else:
             print("Invalid selection. Please try again.\n")

@@ -44,9 +44,9 @@ def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_s
         # this was added because the state transition distribution had rows with all 0s for the terminal state.
         # you have to set 1.0 to the terminal state when transitioning from the terminal state
         # if not p_fwd:
-        #	posterior.append({st: 0.0 for st in states})
+        # 	posterior.append({st: 0.0 for st in states})
         # else:
-        #	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
+        # 	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
         # if the terminal state cycles to itself then you don't need to make the check above.
         posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
     # print(p_fwd)
@@ -96,9 +96,9 @@ def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
         # this was added because the state transition distribution had rows with all 0s for the terminal state.
         # you have to set 1.0 to the terminal state when transitioning from the terminal state
         # if not p_fwd:
-        #	posterior.append({st: 0.0 for st in states})
+        # 	posterior.append({st: 0.0 for st in states})
         # else:
-        #	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
+        # 	posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
         # if the terminal state cycles to itself then you don't need to make the check above.
         posterior.append({st: fwd[i][st] * bkw[i][st] / p_fwd for st in states})
     print(p_fwd)

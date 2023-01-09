@@ -2,6 +2,8 @@ import itertools
 import math
 import random
 
+from scipy.special import rel_entr, kl_div
+from scipy.stats import entropy
 from tabulate import tabulate
 
 import numpy as np
@@ -48,7 +50,7 @@ def information_gain(Q, P, s, path_probability):
     return (known_rel_entropy, worst_expected_entropy)
 
 
-def action_to_str(a):
+def action_to_str_russel_norvig_world(a):
     if a == -1:
         return "DONE"
     elif a == 0:
@@ -62,7 +64,7 @@ def action_to_str(a):
     return "#"
 
 
-def action_to_str2(a):
+def action_to_str_river_world(a):
     result = '#'
     if a == -1:
         result = "DONE"
@@ -113,9 +115,68 @@ def to_markov_chain(p, T, max_t):
     return result
 
 
+def stationary_distribution(markov_chain, starting_state, power):
+    state = [starting_state]
+    state_history = [state[0]]
+    for x in range(power):
+        next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
+                       for markov_chain_col in zip(*markov_chain)]
+                      for state_row in state]
+        state_history.append(next_state[0])
+        state = next_state
+    return (state, state_history)
+
+
+def to_hidden_markov_model(transition_matrix, policy, number_of_states, number_of_observable_actions, start_state):
+    states = [i for i in range(number_of_states)]
+    start_p = [0.0 for i in range(number_of_states)]
+    start_p[start_state] = 1.0
+
+    # Viterbi needs 12x12 transition matrix
+    # Generate the one induced by the policy
+    trans_p = []
+    for i in range(number_of_states):
+        trans_p.append([0.0 for j in range(number_of_states)])
+        if not np.isnan(policy[i]) and not policy[i] == -1:
+            for j in range(number_of_states):
+                trans_p[i][j] = transition_matrix[i, j, int(policy[i])]
+    # emmission probabilities are induced by the policy
+    emit_p = []
+    for i in range(number_of_states):
+        emit_p.append([0.0 for j in range(number_of_observable_actions + 1)])
+        # TODO - make nondeterministic policy possible
+        if not np.isnan(policy[i]):
+            # Increment observable actions by 1, index 0 means termination
+            emit_p[i][int(policy[i]) + 1] = 1.0
+    return (states, start_p, trans_p, emit_p)
+
+
+def kl_divergence_for_each_state(p, q):
+    rows = len(p)
+    cols = len(p[0])
+    _p = [[0] * cols for i in range(rows)]
+    _q = [[0] * cols for i in range(rows)]
+    result = [[0] * cols for i in range(rows)]
+    for i in range(rows):
+        for j in range(cols):
+            p_i_j = p[i][j]
+            q_i_j = q[i][j]
+
+            if p_i_j > 1.0:
+                p_i_j = 1.0
+
+            if q_i_j > 1.0:
+                q_i_j = 1.0
+
+            _p[i][j] = [p_i_j, 1.0 - p_i_j]
+            _q[i][j] = [q_i_j, 1.0 - q_i_j]
+            result[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+    return (_p, _q, result)
+
+
 def equilibrium_distribution(transition_matrix):
     """Calculate the equlibrium distribution of a transition matrix
-    
+
     This should give you the equilibrium distribution of the transition 
     matrix. It is important to note that the equilibrium distribution 
     only exists if the transition matrix is aperiodic and irreducible, 
