@@ -7,6 +7,7 @@ import pandas as pd
 def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_st):
     # Forward part of the algorithm
     fwd = []
+    f_prev = {}
     for i, observation_i in enumerate(observations):
         f_curr = {}
         for st in states:
@@ -25,6 +26,7 @@ def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_s
 
     # Backward part of the algorithm
     bkw = []
+    b_prev = {}
     for i, observation_i_plus in enumerate(reversed(observations[1:] + [None, ])):
         b_curr = {}
         for st in states:
@@ -59,6 +61,7 @@ def fwd_bkw_custom(observations, states, start_prob, trans_prob, emm_prob, end_s
 def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
     # Forward part of the algorithm
     fwd = []
+    f_prev = {}
     for i, observation_i in enumerate(observations):
         f_curr = {}
         for st in states:
@@ -77,6 +80,7 @@ def fwd_bkw(observations, states, start_prob, trans_prob, emm_prob, end_st):
 
     # Backward part of the algorithm
     bkw = []
+    b_prev = {}
     for i, observation_i_plus in enumerate(reversed(observations[1:] + (None,))):
         b_curr = {}
         for st in states:
