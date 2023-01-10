@@ -168,8 +168,8 @@ def main_iterative(obs=[]):
     markov_chain[7][7] = 1.0
     # set start state
     starting_state = [0.0, 0.0, 0.0, 0.0,
-    		1.0, 0.0, 0.0, 0.0,
-    		0.0, 0.0, 0.0, 0.0]
+                      1.0, 0.0, 0.0, 0.0,
+                      0.0, 0.0, 0.0, 0.0]
     state, state_history = hlp.stationary_distribution(markov_chain, starting_state, 20)
     print("Stationary Distribution:")
     print(state)
@@ -274,17 +274,18 @@ def main_iterative(obs=[]):
     #    for key, val in result[2][i].items():
     #        val_ls.append(val)
     #    p.append(val_ls)
-
-    russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
-
-    p = russelhmm.forward_backward(obs)[1:]
-
-    q = state_history[:len(obs)]
+    print("observation sequence:")
     print(obs)
+    russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+    posterior_marginals = russelhmm.forward_backward(obs)
+    print("posterior marginals:")
+    print(pd.DataFrame(posterior_marginals).to_string())
+    print("========== Difference Between Prior and Posterior Marginals  ==========")
+    p = posterior_marginals[1:]
+    q = state_history[:len(obs)]
 
     rows = len(p)
     cols = len(p[0])
-
     # https://stackoverflow.com/questions/63369974/3-functions-for-computing-relative-entropy-in-scipy-whats-the-difference
     print('##ACTUAL DISTRIBUTION##')
     print(pd.DataFrame(p).to_string())
