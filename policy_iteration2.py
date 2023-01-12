@@ -170,7 +170,7 @@ def main_iterative(obs=[]):
     starting_state = [0.0, 0.0, 0.0, 0.0,
                       1.0, 0.0, 0.0, 0.0,
                       0.0, 0.0, 0.0, 0.0]
-    state, state_history = hlp.stationary_distribution(markov_chain, starting_state, 20)
+    state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
     print("Stationary Distribution:")
     print(state)
     state_history_df = pd.DataFrame(state_history)

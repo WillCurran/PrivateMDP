@@ -123,6 +123,7 @@ def dijkstra_retry(T, start, goal, prev_edge, curr_repeat):
 
 def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
     dijkstra_res = dijkstra(T, start, goal, None, 1)
+
     A = [dijkstra_res]
     B = []
 
@@ -135,16 +136,15 @@ def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
     prev_edge = None
 
     tCopy = copy.deepcopy(T)
-
+    total_loops = 0
     k = 1
-
     while(k < K):
         for i in range(len(A[k - 1]) - 2):
             prev_edge = None
             spurNode = A[k - 1][i]
 
             rootPath = A[k - 1][0:i]
-
+            
             for p in A:
                 if rootPath == p[0:i]:
                     prev_edge = (p[i], p[i + 1], T[p[i]][p[i + 1]])
@@ -159,11 +159,11 @@ def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
                         T[rootNode][i] = 0
 
             spurPath = dijkstra(T, spurNode, goal, prev_edge, max_repeats)
-
             if(len(spurPath) == 0):
                 T = copy.deepcopy(tCopy)
                 continue
             totalPath = rootPath + spurPath
+
             totalCost = path_cost(totalPath, tCopy)
 
             if B.count((totalCost, totalPath)) == 0:
@@ -171,9 +171,10 @@ def kdijkstra_actions(T, start, goal, K, pi, max_repeats):
                 # print("Total path " + str(totalPath))
 
             T = copy.deepcopy(tCopy)
+            total_loops += 1
 
         if len(B) == 0:
-            print("break1")
+            # print("break1")
             break
 
         # Check for a repeat

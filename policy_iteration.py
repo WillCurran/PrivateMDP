@@ -182,13 +182,14 @@ def main_iterative(obs=[]):
     starting_state = [0.0, 0.0, 0.0, 0.0,
                       0.0, 0.0, 0.0, 0.0,
                       1.0, 0.0, 0.0, 0.0]
-    state, state_history = hlp.stationary_distribution(markov_chain, starting_state, 20)
+    state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
     print("Stationary Distribution")
     print(state)
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
     print(state_history_df.to_string())
+    
     print("=========================== Create HMM ==========================")
     start_state = 8
     states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 4, start_state)
@@ -320,60 +321,36 @@ def main_iterative(obs=[]):
         print(sum(kl_div(p[i], q[i])))
 
     print("==================== KL Divergence for each state ===================")
-    _p, _q, expected_excess_surprise = hlp.kl_divergence_for_each_state(p, q)
+    _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
 
     print(pd.DataFrame(_p).to_string())
     print(pd.DataFrame(_q).to_string())
-    print(pd.DataFrame(expected_excess_surprise).to_string())
+    print(pd.DataFrame(divergence).to_string())
     print(pd.DataFrame(_p).to_string())
     print(pd.DataFrame(_q).to_string())
-    print(pd.DataFrame(expected_excess_surprise).to_string())
+    print(pd.DataFrame(divergence).to_string())
 
     print("==================== Expected Leakage ===================")
 
-    probs = []
-    variances = []
+    probabilities = []
+    divergences = []
     for a in A:
         obs = a[0]
-        prob = a[1]
-        probs.append(prob)
-
+        probability = a[1]
+        probabilities.append(probability)
         obs = [obs[i] + 1 for i in range(len(obs))]
-        result = fb.fwd_bkw_custom(
-            obs, states, start_p, trans_p, emit_p, end_state)
-        p = []
-        for i in range(len(obs)):
-            val_ls = []
-            for key, val in result[2][i].items():
-                val_ls.append(val)
-            p.append(val_ls)
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+        posterior_marginals = russelhmm.forward_backward(obs)
+        p = posterior_marginals[1:]
         q = state_history[:len(obs)]
-        rows = len(p)
-        cols = len(p[0])
-        _p = [[0] * cols for i in range(rows)]
-        _q = [[0] * cols for i in range(rows)]
-        expected_variance = [[0] * cols for i in range(rows)]
-        for i in range(rows):
-            for j in range(cols):
-                p_i_j = p[i][j]
-                q_i_j = q[i][j]
-
-                if p_i_j > 1.0:
-                    p_i_j = 1.0
-
-                if q_i_j > 1.0:
-                    q_i_j = 1.0
-
-                _p[i][j] = [p_i_j, 1.0 - p_i_j]
-                _q[i][j] = [q_i_j, 1.0 - q_i_j]
-                expected_variance[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
-        variances.append(expected_variance[-1][end_state])
-    print(sum(probs))
-    print(probs)
-    print(variances)
-    expected_leakage = [variances[i] * probs[i] for i in range(len(probs))]
+        _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
+        divergences.append(divergence[-1][end_state])
+    print(sum(probabilities))
+    print(probabilities)
+    print(divergences)
+    expected_leakage = [divergences[i] * probabilities[i] for i in range(len(probabilities))]
     print('Upper Bound:')
-    print(sum(expected_leakage + [1 - sum(probs)]))
+    print(sum(expected_leakage + [1 - sum(probabilities)]))
     print('Lower Bound:')
     print(sum(expected_leakage))
 

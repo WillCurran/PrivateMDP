@@ -115,7 +115,35 @@ def to_markov_chain(p, T, max_t):
     return result
 
 
-def stationary_distribution(markov_chain, starting_state, power):
+def n_step_transition_matrix(T, n):
+    # Initialize a list to store the matrix exponentiations
+    result = []
+    # Compute matrix exponentiations
+    for i in range(n):
+        P_i = np.linalg.matrix_power(T, i + 1)  # i+1 since the range starts from 0
+        result.append(P_i)
+    return result
+
+
+def state_probability_after_n_steps(T, n, start_state):
+    """Calculates the n step transition matrix probability distribution
+    to caclulate the state probability after n steps.
+
+    """
+    # Compute matrix exponentiation P^n
+    P_n = np.linalg.matrix_power(T, n)
+    
+    # Compute the final state distribution after n steps
+    final_dist = np.dot(start_state, P_n)
+    return final_dist
+
+
+def state_probabilities_up_to_n_steps(markov_chain, starting_state, power):
+    """Calculates the state probability after steps from 1 to n.
+    power is n or the number to raise the markov chain for to calculate 
+    the n step transition matrix probability distribution.
+
+    """
     state = [starting_state]
     state_history = [state[0]]
     for x in range(power):
