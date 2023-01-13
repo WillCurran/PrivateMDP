@@ -183,13 +183,27 @@ def main_iterative(obs=[]):
                       0.0, 0.0, 0.0, 0.0,
                       1.0, 0.0, 0.0, 0.0]
     state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
-    print("Stationary Distribution")
+    print("State probabilities after 20 steps")
     print(state)
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
     print(state_history_df.to_string())
+    print("======================= Equilibrium Distribtuion of MDP =======================")
     
+    if hlp.is_irreducible_aperiodic(T.sum(axis=-1)):
+        print("The matrix is irreducible and aperiodic")
+    else:
+        print("The matrix is NOT irreducible and aperiodic")
+
+    # Calculate equilibrium distribution
+    print(np.shape(T))
+    # equilibrium = hlp.equilibrium_distribution_2(T)
+    equilibrium_dist = hlp.equilibrium_distribution_power_iteration_3d_cols_left(T, np.array(starting_state))
+    print(equilibrium_dist)
+    print("======================= Stationary Distribtuion of Markov Chain=======================")
+    stationary_dist = hlp.stationary_distribution(np.array(markov_chain))
+    print(stationary_dist)
     print("=========================== Create HMM ==========================")
     start_state = 8
     states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 4, start_state)
@@ -330,8 +344,14 @@ def main_iterative(obs=[]):
     print(pd.DataFrame(_q).to_string())
     print(pd.DataFrame(divergence).to_string())
 
-    print("==================== Expected Leakage ===================")
-
+    print("================ Expected Leakage of the end state ================")
+    future_dist = hlp.state_probability_after_n_steps(markov_chain, starting_state, 100)
+    print("state probability after 100 steps")
+    hlp.print_world(future_dist, shape=(3, 4))
+    print("minimum non-zero probability")
+    least_likely_future_state = np.where(future_dist == np.min(future_dist[np.nonzero(future_dist)]))
+    print(least_likely_future_state[0][0])
+    print(future_dist[least_likely_future_state])
     probabilities = []
     divergences = []
     for a in A:
@@ -345,12 +365,22 @@ def main_iterative(obs=[]):
         q = state_history[:len(obs)]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences.append(divergence[-1][end_state])
-    print(sum(probabilities))
+    print("probabilities accounted for")
     print(probabilities)
+    print(sum(probabilities))
     print(divergences)
     expected_leakage = [divergences[i] * probabilities[i] for i in range(len(probabilities))]
+    most_surprising_dist = [0] * len(states)
+    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    print(most_surprising_dist)
+    p = [most_surprising_dist]
+    q = [future_dist.tolist()]
+    _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
+    remaining_probability = 1 - sum(probabilities)
+    remaining_possible_leakage = most_surprising_divergence[-1][end_state] * remaining_probability
+    print(remaining_possible_leakage)
     print('Upper Bound:')
-    print(sum(expected_leakage + [1 - sum(probabilities)]))
+    print(sum(expected_leakage + [remaining_possible_leakage]))
     print('Lower Bound:')
     print(sum(expected_leakage))
 

@@ -2,10 +2,13 @@ import itertools
 import math
 import random
 
+from header_printer import print_header
 from scipy.special import rel_entr, kl_div
 from scipy.stats import entropy
 from tabulate import tabulate
 
+import numpy as np
+import numpy as np
 import numpy as np
 import pandas as pd
 
@@ -125,14 +128,14 @@ def n_step_transition_matrix(T, n):
     return result
 
 
-def state_probability_after_n_steps(T, n, start_state):
+def state_probability_after_n_steps(T, start_state, n):
     """Calculates the n step transition matrix probability distribution
     to caclulate the state probability after n steps.
 
     """
-    # Compute matrix exponentiation P^n
+    # Compute matrix exponentiation T^n
     P_n = np.linalg.matrix_power(T, n)
-    
+
     # Compute the final state distribution after n steps
     final_dist = np.dot(start_state, P_n)
     return final_dist
@@ -202,21 +205,215 @@ def kl_divergence_for_each_state(p, q):
     return (_p, _q, result)
 
 
-def equilibrium_distribution(transition_matrix):
-    """Calculate the equlibrium distribution of a transition matrix
-
-    This should give you the equilibrium distribution of the transition 
-    matrix. It is important to note that the equilibrium distribution 
-    only exists if the transition matrix is aperiodic and irreducible, 
-    which means that it is possible to reach any state from any other 
-    state in a finite number of steps and that there is no subset of states 
-    that cannot be reached from any other state.
-    """
-    eigenvalues, eigenvectors = np.linalg.eig(transition_matrix)
+def stationary_distribution(P):
+    # Find the eigenvalues and eigenvectors
+    eigenvalues, eigenvectors = np.linalg.eig(P.T)
+    
+    # Find the index of the eigenvalue of 1
     index = np.where(np.isclose(eigenvalues, 1))[0][0]
-    result = np.conj(eigenvectors[:, index]).T
-    result = result / result.sum()
-    return result
+    
+    # Normalize the eigenvector to obtain the stationary distribution
+    stationary_dist = np.real(eigenvectors[:, index] / eigenvectors[:, index].sum())
+    return stationary_dist
+
+
+def equilibrium_distribution(transition_matrix, max_iter=100, tol=1e-8):
+    """
+    Calculates the equilibrium distribution using power iteration.
+    transition_matrix: an array with shape (num_states, num_states, num_actions)
+    max_iter: maximum number of iterations
+    tol: tolerance for convergence
+    """
+    num_states, _, num_actions = transition_matrix.shape
+    # Initialize distribution as uniform
+    distribution = np.ones((num_states,)) / num_states
+    for i in range(max_iter):
+        prev_distribution = distribution
+        # Calculate new distribution
+        distribution = np.sum(transition_matrix[:,:, i] @ distribution, axis=1)
+        # Check for convergence
+        if np.linalg.norm(distribution - prev_distribution) < tol:
+            break
+    return distribution
+
+
+def equilibrium_distribution_2(transition_matrix, max_iter=100, tol=1e-8):
+    """
+    Calculates the equilibrium distribution using power iteration.
+    transition_matrix: an array with shape (num_states, num_states, num_actions)
+    max_iter: maximum number of iterations
+    tol: tolerance for convergence
+    """
+    num_states, _, num_actions = transition_matrix.shape
+    # Initialize distribution as uniform
+    distribution = np.ones((num_states,)) / num_states
+    for i in range(max_iter):
+        prev_distribution = distribution
+        # Calculate new distribution
+        distribution = np.sum(transition_matrix[:,:, i] @ distribution, axis=0)
+        # Check for convergence
+        if np.linalg.norm(distribution - prev_distribution) < tol:
+            break
+    return distribution
+
+
+def equilibrium_distribution_eigen_3d_cols(P, pi):
+    """
+    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using eigenvectors
+    :param P: Transition matrix, indexed by source state, next state, and action
+    :param pi: Initial distribution
+    :return: Equilibrium distribution
+    # Transition matrix, indexed by source state, next state, and action
+    P = np.random.rand(12, 12, 4)
+    
+    # Initial distribution
+    pi = np.ones(12)/12
+    
+    # Normalize the transition matrix by columns
+    P /= P.sum(axis=-1, keepdims=True)
+    
+    # Calculate equilibrium distribution
+    pi_star = equilibrium_distribution_eigen_3d_cols(P, pi)
+    print(pi_star)
+    """
+    # Sum over the action dimension
+    P_flat = P.sum(axis=-2)
+    # Transpose the matrix
+    P_flat = P_flat.T
+    # Calculate eigenvalues and eigenvectors
+    eigenvalues, eigenvectors = np.linalg.eig(P_flat)
+    # Find the index of the eigenvalue closest to 1
+    index = (np.abs(eigenvalues - 1)).argmin()
+    # Normalize the corresponding eigenvector
+    pi_star = eigenvectors[:, index] / eigenvectors[:, index].sum()
+    # reshape it to the original shape of pi
+    pi_star = pi_star.reshape(pi.shape)
+    return pi_star
+
+
+def equilibrium_distribution_perron_frobenius_3d_cols(P, pi):
+    """
+    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using the Perron-Frobenius theorem
+    :param P: Transition matrix, indexed by source state, next state, and action
+    :param pi: Initial distribution
+    :return: Equilibrium distribution
+
+    # Transition matrix, indexed by source state, next state, and action
+    P = np.random.rand(12, 12, 4)
+
+    # Initial distribution
+    pi = np.ones(12)/12
+
+    # Normalize the transition matrix by columns
+    P /= P.sum(axis=-1, keepdims=True)
+
+    # Calculate equilibrium distribution
+    pi_star = equilibrium_distribution_perron_frobenius_3d_cols(P, pi)
+    print(pi_star)
+    """
+    # Sum over the action dimension
+    P_flat = P.sum(axis=-2)
+    # Calculate eigenvalues and eigenvectors
+    eigenvalues, eigenvectors = np.linalg.eig(P_flat)
+    # Find the eigenvalue closest to 1
+    index = (np.abs(eigenvalues - 1)).argmin()
+    pi_star = eigenvectors[:, index] / eigenvectors[:, index].sum()
+    # reshape it to the original shape of pi
+    pi_star = pi_star.reshape(pi.shape)
+    return pi_star
+
+
+def equilibrium_distribution_power_iteration_3d_cols(P, pi, epsilon=1e-8, max_iter=1000):
+    """
+    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using power iteration method
+    :param P: Transition matrix, indexed by source state, next state, and action
+    :param pi: Initial distribution
+    :param epsilon: Tolerance for convergence
+    :param max_iter: Maximum number of iterations
+    :return: Equilibrium distribution
+    EX: 
+    # Transition matrix, indexed by source state, next state, and action
+    P = np.random.rand(12, 12, 4)
+
+    # Initial distribution
+    pi = np.ones(12)/12
+
+    # Normalize the transition matrix by columns
+    P /= P.sum(axis=-1, keepdims=True)
+
+    # Calculate equilibrium distribution
+    pi_star = equilibrium_distribution_power_iteration_3d_cols(P, pi)
+    print(pi_star)
+    """
+    # Sum over the action dimension
+    P_flat = P.sum(axis=-1)
+    pi_star = pi.copy()
+    for _ in range(max_iter):
+        pi_prev = pi_star.copy()
+        pi_star = pi_star.dot(P_flat)
+        if np.allclose(pi_prev, pi_star, atol=epsilon):
+            break
+    return pi_star
+
+
+def equilibrium_distribution_power_iteration_3d_cols_left(P, pi, epsilon=1e-8, max_iter=1000):
+    """
+    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using power iteration method
+    :param P: Transition matrix, indexed by source state, next state, and action
+    :param pi: Initial distribution
+    :param epsilon: Tolerance for convergence
+    :param max_iter: Maximum number of iterations
+    :return: Equilibrium distribution
+    EX: 
+    # Transition matrix, indexed by source state, next state, and action
+    P = np.random.rand(12, 12, 4)
+
+    # Initial distribution
+    pi = np.ones(12)/12
+
+    # Normalize the transition matrix by columns
+    P /= P.sum(axis=-1, keepdims=True)
+
+    # Calculate equilibrium distribution
+    pi_star = equilibrium_distribution_power_iteration_3d_cols(P, pi)
+    print(pi_star)
+    """
+    # Sum over the action dimension
+    P_flat = P.sum(axis=-1)
+    pi_star = pi.copy()
+    # check if the matrix is irreducible and aperiodic
+    if (np.linalg.matrix_power(P_flat, 100) > 0).all():
+        # check if the initial distribution is a left eigenvector of the transition matrix
+        pi_star /= pi_star.dot(P_flat)
+        for _ in range(max_iter):
+            pi_prev = pi_star.copy()
+            pi_star = pi_star.dot(P_flat)
+            if np.allclose(pi_prev, pi_star, atol=epsilon):
+                break
+    return pi_star
+
+
+def is_irreducible_aperiodic(P):
+    """
+    Check if a matrix is irreducible and aperiodic
+    :param P: Transition matrix
+    :return: True if the matrix is irreducible and aperiodic, False otherwise
+    EX: 
+    # Transition matrix, indexed by source state, next state, and action
+    P = np.random.rand(12, 12, 4)
+
+    # Normalize the transition matrix by columns
+    P /= P.sum(axis=-1, keepdims=True)
+
+    if is_irreducible_aperiodic(P.sum(axis=-1)):
+        pi_star = equilibrium_distribution_power_iteration_3d_cols(P, pi)
+        print(pi_star)
+    else:
+        print("The matrix is not irreducible and aperiodic")
+        
+    """
+    P_n = np.linalg.matrix_power(P, 100)
+    return (P_n > 0).all()
 
 
 def enumerate_policies(states, actions, obstacles, terminals):
@@ -303,7 +500,7 @@ def get_expected_visits(states, start_p, T, p, t):
     return curr_p
 
 
-def print_world(arr, shape):
+def print_world(arr, shape=(3, 4)):
     table = np.reshape(arr, shape)
     headers = np.arange(shape[1]) + 1
     df = pd.DataFrame(table)
@@ -311,6 +508,14 @@ def print_world(arr, shape):
     df.index = row_labels
 
     print(tabulate(df, headers=headers))
+
+
+def print_h1(message):
+    print_header(message.title())
+
+
+def print_h2(message):
+    print((" " + message + " ").center(80, '='))
 
 
 def main():
