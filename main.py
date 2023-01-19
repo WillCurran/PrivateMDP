@@ -70,38 +70,23 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     markov_chain[3][3] = 1.0
     markov_chain[7][7] = 1.0
     # set start state
-    state = [
-        [0.0, 0.0, 0.0, 0.0,
-         0.0, 0.0, 0.0, 0.0,
-         1.0, 0.0, 0.0, 0.0]]
-    state_history = [state[0]]
-    for x in range(20):
-        next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
-                       for markov_chain_col in zip(*markov_chain)]
-                      for state_row in state]
-        state_history.append(next_state[0])
-        state = next_state
-    hlp.print_h2("stationary distribution")
-    hlp.print_world(state, (3, 4))
+    starting_state = [0.0, 0.0, 0.0, 0.0,
+                      1.0, 0.0, 0.0, 0.0,
+                      0.0, 0.0, 0.0, 0.0]
+    state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
+    print("Stationary Distribution:")
+    print(state)
     state_history_df = pd.DataFrame(state_history)
     # state_history_df.plot()
     # plt.show()
+    print(state_history_df.to_string())
     hlp.print_h2("create hidden markov model with mdp and policy")
-    # Viterbi needs 12x12 transition matrix
-    # Generate the one induced by the policy
-    trans_p = []
-    for i in range(12):
-        trans_p.append([0.0 for j in range(12)])
-        if not np.isnan(p[i]) and not p[i] == -1:
-            for j in range(12):
-                trans_p[i][j] = T[i, j, int(p[i])]
-    # emmission probabilities are induced by the policy
-    emit_p = []
-    for i in range(12):
-        emit_p.append([0.0 for j in range(5)])
-        # TODO - make nondeterministic policy possible
-        if not np.isnan(p[i]):
-            emit_p[i][int(p[i]) + 1] = 1.0
+    start_state = 4
+    states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 2, start_state)
+    hlp.print_h2("compute the most likely sequence of hidden states")
+    #A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 10)
+
+    #print(*A, sep="\n")
 
 
 def main():
@@ -123,7 +108,7 @@ def main():
             break
         elif selection == "3":
             print("you selected option 3")
-            run_russel_norvig_world_optimal_policy_viterbi_path_only()()
+            run_russel_norvig_world_optimal_policy_viterbi_path_only()
             break
         else:
             print("Invalid selection. Please try again.\n")
