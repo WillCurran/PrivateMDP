@@ -71,8 +71,8 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     markov_chain[7][7] = 1.0
     # set start state
     starting_state = [0.0, 0.0, 0.0, 0.0,
-                      1.0, 0.0, 0.0, 0.0,
-                      0.0, 0.0, 0.0, 0.0]
+                      0.0, 0.0, 0.0, 0.0,
+                      1.0, 0.0, 0.0, 0.0]
     state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
     print("Stationary Distribution:")
     print(state)
@@ -81,12 +81,9 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     # plt.show()
     print(state_history_df.to_string())
     hlp.print_h2("create hidden markov model with mdp and policy")
-    start_state = 4
-    states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 2, start_state)
+    start_state = 8
+    states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 4, start_state)
     hlp.print_h2("compute the most likely sequence of hidden states")
-    #A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 10)
-
-    #print(*A, sep="\n")
 
 
 def main():
