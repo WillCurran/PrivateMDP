@@ -179,10 +179,10 @@ def main_iterative(obs=[]):
     markov_chain[3][3] = 1.0
     markov_chain[7][7] = 1.0
     # set start state
-    starting_state = [0.0, 0.0, 0.0, 0.0,
-                      0.0, 0.0, 0.0, 0.0,
-                      1.0, 0.0, 0.0, 0.0]
-    state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, starting_state, 20)
+    start_p = [0.0, 0.0, 0.0, 0.0,
+               0.0, 0.0, 0.0, 0.0,
+               1.0, 0.0, 0.0, 0.0]
+    state, state_history = hlp.state_probabilities_up_to_n_steps(markov_chain, start_p, 20)
     print("State probabilities after 20 steps")
     print(state)
     state_history_df = pd.DataFrame(state_history)
@@ -199,7 +199,7 @@ def main_iterative(obs=[]):
     # Calculate equilibrium distribution
     print(np.shape(T))
     # equilibrium = hlp.equilibrium_distribution_2(T)
-    equilibrium_dist = hlp.equilibrium_distribution_power_iteration_3d_cols_left(T, np.array(starting_state))
+    equilibrium_dist = hlp.equilibrium_distribution_power_iteration_3d_cols_left(T, np.array(start_p))
     print(equilibrium_dist)
     print("======================= Stationary Distribtuion of Markov Chain=======================")
     stationary_dist = hlp.stationary_distribution(np.array(markov_chain))
@@ -345,7 +345,7 @@ def main_iterative(obs=[]):
     print(pd.DataFrame(divergence).to_string())
 
     print("================ Expected Leakage of the end state ================")
-    future_dist = hlp.state_probability_after_n_steps(markov_chain, starting_state, 100)
+    future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
     print("state probability after 100 steps")
     hlp.print_world(future_dist, shape=(3, 4))
     print("minimum non-zero probability")

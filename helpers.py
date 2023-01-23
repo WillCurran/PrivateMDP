@@ -8,8 +8,6 @@ from scipy.stats import entropy
 from tabulate import tabulate
 
 import numpy as np
-import numpy as np
-import numpy as np
 import pandas as pd
 
 CMP_DELTA = 0.000001
@@ -141,13 +139,13 @@ def state_probability_after_n_steps(T, start_state, n):
     return final_dist
 
 
-def state_probabilities_up_to_n_steps(markov_chain, starting_state, power):
+def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
     """Calculates the state probability after steps from 1 to n.
     power is n or the number to raise the markov chain for to calculate 
     the n step transition matrix probability distribution.
 
     """
-    state = [starting_state]
+    state = [start_p]
     state_history = [state[0]]
     for x in range(power):
         next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
@@ -165,6 +163,7 @@ def to_hidden_markov_model(transition_matrix, policy, number_of_states, number_o
 
     # Viterbi needs 12x12 transition matrix
     # Generate the one induced by the policy
+    
     trans_p = []
     for i in range(number_of_states):
         trans_p.append([0.0 for j in range(number_of_states)])
@@ -516,6 +515,11 @@ def print_h1(message):
 
 def print_h2(message):
     print((" " + message + " ").center(80, '='))
+
+
+def print_table(table):
+    df = pd.DataFrame(table)
+    print(df.to_string())
 
 
 def main():
