@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
+import eppstein
 
 
 def run_russel_norvig_world():
@@ -109,7 +110,8 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     print('probability')
     print(dk.path_prob(D, trans_p))
     hlp.print_h2('compute most likely sequence of actions to the end state')
-    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    state_index_list, A = eppstein.extract_data("russelworld.txt", p)
     print('result')
     print(A[0])
     obs = A[0][0]
@@ -197,14 +199,16 @@ def run_russel_norvig_world_old(obs=[]):
 
     # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
-    end_state = 3
-    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
-    print(D)
-    print(dk.path_prob(D, trans_p))
+    # end_state = 3
+    # D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
+    # print(D)
+    # print(dk.path_prob(D, trans_p))
 
     print("=========================== KDijkstra ===========================")
 
-    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
+    epp_states, epp_actions = eppstein.extract_data("russelworld.txt", p)
+    print(epp_actions)
 
     print(*A, sep="\n")
 
@@ -404,9 +408,9 @@ def run_river_world_old(obs=[]):
 
     # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
-    D = (dk.dijkstra(trans_p, start_state, 7, None, 3))
-    print(D)
-    print(dk.path_prob(D, trans_p))
+    # D = (dk.dijkstra(trans_p, start_state, 7, None, 3))
+    # print(D)
+    # print(dk.path_prob(D, trans_p))
 
     print("===========================KDijkstra===========================")
 
