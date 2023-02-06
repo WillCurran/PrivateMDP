@@ -1,5 +1,7 @@
 import policy_iteration as russel_norvig_world
 import helpers as h
+
+
 def extract_data(filename,pi):
     data = []
     obs = []
@@ -27,8 +29,13 @@ def extract_data(filename,pi):
     return data, obs
 
 
-T, p, u, r, gamma = russel_norvig_world.main_iterative()
+def main():
+    T, p, u, r, gamma = russel_norvig_world.main_iterative()
 
-filename = 'russelworld.txt'
-result, obs = extract_data(filename,p)
-print(*obs, sep="\n")
+    filename = 'russelworld.txt'
+    result, obs = extract_data(filename,p)
+    print(*obs, sep="\n")
+
+
+if __name__ == "__main__":
+    main()

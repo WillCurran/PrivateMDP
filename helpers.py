@@ -198,6 +198,7 @@ def kl_divergence_for_each_state(p, q):
             if q_i_j > 1.0:
                 q_i_j = 1.0
 
+            #compute Bernoulli distribution
             _p[i][j] = [p_i_j, 1.0 - p_i_j]
             _q[i][j] = [q_i_j, 1.0 - q_i_j]
             result[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
