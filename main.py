@@ -6,9 +6,11 @@ from scipy.special import rel_entr, kl_div
 from scipy.stats import entropy
 from tabulate import tabulate
 
+from helpers import print_table
 import Forward_Backward_Algiorithm_wikipedia as fb
 import Viterbi_Algorithm_wikipedia as vt
 import dijkstras as dk
+import eppstein
 import helpers as hlp
 import hmm as hmm
 import matplotlib.pyplot as plt
@@ -16,8 +18,6 @@ import numpy as np
 import pandas as pd
 import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
-import eppstein
-from helpers import print_table
 
 
 def run_russel_norvig_world():
@@ -38,24 +38,32 @@ def run_russel_norvig_world():
     policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
     print("first policy returned:")
     russel_norvig_world.print_policy(policies[0], (3, 4))
-    utility = russel_norvig_world.return_policy_evaluation(policies[0], u, r, T, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policies[0], r, gamma)
+    print('*')
     hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
     print("last policy returned:")
     russel_norvig_world.print_policy(policies[-1], (3, 4))
-    utility = russel_norvig_world.return_policy_evaluation(policies[-1], u, r, T, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policies[-1], r, gamma)
     hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
     print("middle policy returned:")
     middleIndex = math.floor((len(policies) - 1) / 2)
     print(middleIndex)
     russel_norvig_world.print_policy(policies[middleIndex], (3, 4))
-    utility = russel_norvig_world.return_policy_evaluation(policies[middleIndex], u, r, T, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policies[middleIndex], r, gamma)
     hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
     print("bad policy:")
-    middleIndex = math.floor((len(policies) - 1) / 2)
     bad_policy = (2, 2, 2, -1, 2, np.NaN, 2, -1, 2, 2, 2, 2)
     russel_norvig_world.print_policy(bad_policy, (3, 4))
-    utility = russel_norvig_world.return_policy_evaluation(bad_policy, u, r, T, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, bad_policy, r, gamma)
     hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
 
 
 def run_river_world():
@@ -64,6 +72,129 @@ def run_river_world():
     """
     # river_world.main_iterative()
         # Define an MDP
+
+
+def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
+    """Run calculation under russel and norvig world.
+
+    This version only a given policy and has no print statements
+    
+    Returns a tuple with upper and lower bound expected leakage
+    """
+    u = np.array([0.0, 0.0, 0.0, 0.0,
+                   0.0, 0.0, 0.0, 0.0,
+                   0.0, 0.0, 0.0, 0.0])
+    u = russel_norvig_world.return_policy_evaluation(p, u, r, T, gamma)
+    # hlp.print_h1("a priori analysis")
+    # hlp.print_h2("Create Markov Chain using MDP and Policy")
+    # print("optimal policy: ")
+    policy = [np.NaN if np.isnan(i) else int(i) for i in p]
+    # russel_norvig_world.print_policy(policy, (3, 4))
+    # print("markov chain:")
+    markov_chain = hlp.to_markov_chain(policy, T, 12)
+    markov_chain_df = pd.DataFrame(markov_chain)
+    # print(markov_chain_df.to_string())
+    # set obstacles to loop
+    markov_chain[5][5] = 1.0
+    # set terminal state to loop
+    markov_chain[3][3] = 1.0
+    markov_chain[7][7] = 1.0
+    
+    # hlp.print_h2("create hidden markov model with mdp and policy")
+    start_state = 8
+    # print('starting state')
+    # print(start_state)
+    end_state = 3
+    # print('ending state')
+    # print(end_state)
+    states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(T, p, 12, 4, start_state)
+    # print('states')
+    # hlp.print_world(states)
+    # print('starting distribution')
+    # hlp.print_world(start_p)
+    # print('transition distribution')
+    # hlp.print_table(trans_p)
+    # print('emissions distribution')
+    # hlp.print_table(emit_p)
+    # hlp.print_h2('compute most likely sequence of hidden states to the end state')
+    # print('states')
+    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
+    # print(D)
+    # print('probability')
+    # print(dk.path_prob(D, trans_p))
+    # hlp.print_h2('compute most likely sequence of actions to the end state')
+    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    # state_index_list, A = eppstein.extract_data("russelworld.txt", p)
+    # print('Total number of action sequences')
+    # print(len(A))
+    # print('result')
+    # print(A[0])
+    obs = A[0][0]
+    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+    # print(actions)
+    # obs needs positive indices for viterbi alg implementation below
+    # obs_original = obs
+    obs = [obs[i] + 1 for i in range(len(obs))]
+    # print(obs)
+    # hlp.print_h2('prior marginals')
+    n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(markov_chain, start_p, 100)
+    n_trans_p = np.array(n_trans_p)
+    # print("state probability after 100 steps")
+    # hlp.print_world(n_trans_p)
+    # print("minimum non-zero probability")
+    least_likely_future_state = np.where(n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
+    # print(least_likely_future_state[0][0])
+    # hlp.print_h2('posterior marginals')
+    # Set obstacle states to loop
+    trans_p[5][5] = 1.0
+    # Set Terminal states to loop
+    trans_p[7][7] = 1.0
+    russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+    posterior_marginals = russelhmm.forward_backward(obs)
+    # hlp.print_h2("expected leakage of the end state")
+    future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
+    # print("state probability after 100 steps")
+    # hlp.print_world(future_dist)
+    # print("minimum non-zero state probability")
+    least_likely_future_state = np.where(future_dist == np.min(future_dist[np.nonzero(future_dist)]))
+    # print(least_likely_future_state[0][0])
+    # print(future_dist[least_likely_future_state])
+    probabilities = []
+    divergences = []
+    for a in A:
+        obs = a[0]
+        probability = a[1]
+        probabilities.append(probability)
+        obs = [obs[i] + 1 for i in range(len(obs))]
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+        posterior_marginals = russelhmm.forward_backward(obs)
+        p = posterior_marginals[1:]
+        q = n_trans_p_history[:len(obs)]
+        _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
+        divergences.append(sum(divergence[-1]))
+    # print("probabilities accounted for")
+    # print(probabilities)
+    # print(sum(probabilities))
+    # print(len(divergences))
+    # print(divergences)
+    expected_leakage = [divergences[i] * probabilities[i] for i in range(len(probabilities))]
+    most_surprising_dist = [0] * len(states)
+    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    # print('most surprising state distribution')
+    # print(most_surprising_dist)
+    p = [most_surprising_dist]
+    q = [future_dist.tolist()]
+    _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
+    remaining_probability = 1 - sum(probabilities)
+    expected_kl_divergence = sum(most_surprising_divergence[-1])
+    remaining_possible_leakage = expected_kl_divergence * remaining_probability
+    # print('remaining possible leakage')
+    # print(remaining_possible_leakage)
+    # print('Upper Bound:')
+    # print(sum(expected_leakage + [remaining_possible_leakage]))
+    # print('Lower Bound:')
+    # print(sum(expected_leakage))
+    return (u, sum(expected_leakage + [remaining_possible_leakage]), sum(expected_leakage))
 
 
 def run_russel_norvig_world_optimal_policy_only():
@@ -161,10 +292,10 @@ def run_russel_norvig_world_optimal_policy_only():
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences.append(sum(divergence[-1]))
     print("probabilities accounted for")
-    #print(probabilities)
+    # print(probabilities)
     print(sum(probabilities))
     print(len(divergences))
-    #print(divergences)
+    # print(divergences)
     expected_leakage = [divergences[i] * probabilities[i] for i in range(len(probabilities))]
     most_surprising_dist = [0] * len(states)
     most_surprising_dist[least_likely_future_state[0][0]] = 1.0
@@ -338,7 +469,7 @@ def run_russel_norvig_world_old(obs=[]):
 
     print("=========================== KDijkstra ===========================")
 
-    #A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
     epp_states, epp_actions = eppstein.extract_data("russelworld.txt", p)
     print(epp_actions)
     A = epp_actions
