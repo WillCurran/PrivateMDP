@@ -108,6 +108,37 @@ def execute_policy(p, T, start, max_t):
     return output
 
 
+def observation_probability(observation_sequence, start_prob, trans_prob, emit_prob):
+    T = len(observation_sequence)
+    N = start_prob.shape[0]
+
+    alpha = np.zeros((T, N))
+    alpha[0,:] = start_prob * emit_prob[:, observation_sequence[0]]
+    print(alpha)
+    for t in range(1, T):
+        for j in range(N):
+            alpha[t, j] = np.dot(alpha[t - 1], trans_prob[:, j]) * emit_prob[j, observation_sequence[t]]
+
+    return np.sum(alpha[T - 1,:])
+
+
+def observation_probability_two(observation_sequence, start_prob, trans_prob, emit_prob):
+    T = len(observation_sequence)
+    N = len(start_prob)
+
+    alpha = [[0 for j in range(N)] for i in range(T)]
+    for j in range(N):
+        alpha[0][j] = start_prob[j] * emit_prob[j][observation_sequence[0]]
+
+    for t in range(1, T):
+        for j in range(N):
+            for i in range(N):
+                alpha[t][j] += alpha[t - 1][i] * trans_prob[i][j]
+            alpha[t][j] *= emit_prob[j][observation_sequence[t]]
+
+    return sum(alpha[T - 1])
+
+
 def to_markov_chain(p, T, max_t):
     result = [[0] * max_t] * max_t
     for t in range(max_t):
@@ -198,7 +229,7 @@ def kl_divergence_for_each_state(p, q):
             if q_i_j > 1.0:
                 q_i_j = 1.0
 
-            #compute Bernoulli distribution
+            # compute Bernoulli distribution
             _p[i][j] = [p_i_j, 1.0 - p_i_j]
             _q[i][j] = [q_i_j, 1.0 - q_i_j]
             result[i][j] = sum(kl_div(_p[i][j], _q[i][j]))

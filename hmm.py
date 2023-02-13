@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 
+
 class HMM:
     """
     Order 1 Hidden Markov Model
@@ -54,7 +55,7 @@ class HMM:
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[n, t] = np.sum(X[:, t + 1] * self.A[n, :] * self.B[:, obs_seq[t + 1]])
+                X[n, t] = np.sum(X[:, t + 1] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
 
         return X
 
@@ -64,12 +65,12 @@ class HMM:
 
         F = np.zeros((T, N))
 
-        F[0, :] = self.pi * self.B[:, obs_seq[0]]
+        F[0,:] = self.pi * self.B[:, obs_seq[0]]
         F[0] = F[0] / F[0].sum()
 
         for t in range(1, T):
             for n in range(N):
-                F[t, n] = np.dot(F[t - 1, :], (self.A[:, n])) * self.B[n, obs_seq[t]]
+                F[t, n] = np.dot(F[t - 1,:], (self.A[:, n])) * self.B[n, obs_seq[t]]
             # Normalize
             F[t] = F[t] / F[t].sum()
 
@@ -82,17 +83,17 @@ class HMM:
         T = len(obs_seq)
 
         X = np.zeros((T, N))
-        X[-1:, :] = 1
+        X[-1:,:] = 1
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[t, n] = np.sum(X[t + 1, :] * self.A[n, :] * self.B[:, obs_seq[t + 1]])
+                X[t, n] = np.sum(X[t + 1,:] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
             # Normalize
             X[t] = X[t] / X[t].sum()
         first = np.zeros((1, N))
 
         for n in range(N):
-            first[0][n] = np.sum(X[0, :] * self.A[n, :] * self.B[:, obs_seq[0]])
+            first[0][n] = np.sum(X[0,:] * self.A[n,:] * self.B[:, obs_seq[0]])
         first = first / first.sum()
         return np.concatenate([first, X])
 
@@ -104,6 +105,11 @@ class HMM:
         # Compute the posterior marginals
         posteriors = forward * backward / np.sum(forward * backward, axis=1, keepdims=True)
         return posteriors
+    
+    def observation_probability(self, obs_seq):
+        alpha = self.forward(obs_seq)
+
+        return np.sum(alpha[-1,:])
 
     def observation_prob(self, obs_seq):
         """ P( entire observation sequence | A, B, pi ) """
@@ -176,12 +182,12 @@ class HMM:
 
         xi = np.zeros((T - 1, N, N))
         for t in range(xi.shape[0]):
-            xi[t, :, :] = self.A * forw[:, [t]] * self.B[:, obs_seq[t + 1]] * back[:, t + 1] / obs_prob
+            xi[t,:,:] = self.A * forw[:, [t]] * self.B[:, obs_seq[t + 1]] * back[:, t + 1] / obs_prob
 
         gamma = forw * back / obs_prob
 
         # Gamma sum excluding last column
-        gamma_sum_A = np.sum(gamma[:, :-1], axis=1, keepdims=True)
+        gamma_sum_A = np.sum(gamma[:,:-1], axis=1, keepdims=True)
         # Vector of binary values indicating whether a row in gamma_sum is 0.
         # If a gamma_sum row is 0, save old rows on update
         rows_to_keep_A = (gamma_sum_A == 0)
