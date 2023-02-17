@@ -283,10 +283,10 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
     
     B = []
-    for i in range(1):
+    for i in range(2):
         obs = hlp.execute_policy(p, T, start_state, 12)
         obs = [obs[i] + 1 for i in range(len(obs))]
-        prob = russelhmm.observation_probability(obs)
+        prob = russelhmm.observation_prob(obs)
         B.append((obs, prob))
     print(B)
     

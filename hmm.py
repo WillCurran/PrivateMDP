@@ -106,11 +106,6 @@ class HMM:
         posteriors = forward * backward / np.sum(forward * backward, axis=1, keepdims=True)
         return posteriors
     
-    def observation_probability(self, obs_seq):
-        alpha = self.forward(obs_seq)
-
-        return np.sum(alpha[-1,:])
-
     def observation_prob(self, obs_seq):
         """ P( entire observation sequence | A, B, pi ) """
         return np.sum(self._forward(obs_seq)[:, -1])
@@ -219,6 +214,7 @@ def example():
     # result = umbrellaHMM.forward(umbrella_evidence)
     # result = umbrellaHMM.backward(umbrella_evidence)
     result = umbrellaHMM.forward_backward(umbrella_evidence)
+    # result = umbrellaHMM.viterbi(umbrella_evidence)
     return (result)
 
 
