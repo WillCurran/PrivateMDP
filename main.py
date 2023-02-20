@@ -41,6 +41,7 @@ def run_russel_norvig_world(num_samples=1):
 
     result = []
     for p in p_hist:
+        print(p)
         result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
         # russel_norvig_world.print_policy(p, (3, 4))
     print(len(result))
@@ -51,7 +52,8 @@ def run_russel_norvig_world(num_samples=1):
     lowers = []
     uppers = []
     for r in result:
-        average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        # average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        average_utility.append(r[0][8])
         lowers.append(r[2])
         uppers.append(r[1])
     pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
@@ -82,18 +84,27 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     start_p[start_state] = 1.0
 
     policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
-    result = []
-    for p in policies:
-        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
-    print(len(result))
+    # result = []
+    # for p in policies:
+    #    result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
+    # print(len(result))
     
-    average_utility = []
-    lowers = []
-    uppers = []
-    for r in result:
-        average_utility.append(np.sum(r[0]) / (len(r) - 1))
-        lowers.append(r[2])
-        uppers.append(r[1])
+    average_utility = [utility[8]]
+    lowers = [lower_bound]
+    uppers = [upper_bound]
+    # for r in result:
+    #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
+    #    lowers.append(r[2])
+    #    uppers.append(r[1])
+    
+    for i in range(100):
+        p = random.choice(policies)
+        print(list(p))
+        # p = policies[x]
+        result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, list(p), r, gamma, num_samples)
+        average_utility.append(result[0][8])
+        lowers.append(result[2])
+        uppers.append(result[1])
     pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
 
 
@@ -1036,7 +1047,7 @@ def main():
 
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world(100000)
+            run_russel_norvig_world_all_policies(1000)
             break
         elif selection == '2':
             print('you selected option 2')
