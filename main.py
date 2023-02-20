@@ -2,6 +2,7 @@ import math
 import random
 import statistics
 
+from charset_normalizer.md import ArchaicUpperLowerPlugin
 from scipy.special import rel_entr, kl_div
 from scipy.stats import entropy
 from tabulate import tabulate
@@ -16,6 +17,7 @@ import hmm as hmm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pareto as pareto
 import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
 
@@ -31,7 +33,7 @@ def run_russel_norvig_world(num_samples=1):
 
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
     print('*')
     hlp.print_world(utility)
     print(upper_bound)
@@ -39,12 +41,20 @@ def run_russel_norvig_world(num_samples=1):
 
     result = []
     for p in p_hist:
-        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples))
-        #russel_norvig_world.print_policy(p, (3, 4))
+        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
+        # russel_norvig_world.print_policy(p, (3, 4))
+    print(len(result))
     print(result[0])
     print(result[-1])
-    
-    #TODO: Plot Pareto Front Here!
+
+    average_utility = []
+    lowers = []
+    uppers = []
+    for r in result:
+        average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        lowers.append(r[2])
+        uppers.append(r[1])
+    pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
 
 
 def run_russel_norvig_world_all_policies(num_samples=1):
@@ -58,7 +68,7 @@ def run_russel_norvig_world_all_policies(num_samples=1):
 
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
     print('*')
     hlp.print_world(utility)
     print(upper_bound)
@@ -74,8 +84,18 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
     result = []
     for p in policies:
-        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples))
+        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
     print(len(result))
+    
+    average_utility = []
+    lowers = []
+    uppers = []
+    for r in result:
+        average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        lowers.append(r[2])
+        uppers.append(r[1])
+    pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
+
 
 def run_russel_norvig_world_sample_policies(num_samples=1):
     """Run calculation under russel and norvig world.
@@ -87,7 +107,7 @@ def run_russel_norvig_world_sample_policies(num_samples=1):
 
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
@@ -102,7 +122,7 @@ def run_russel_norvig_world_sample_policies(num_samples=1):
     policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
     print("first policy returned:")
     russel_norvig_world.print_policy(policies[0], (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[0], r, gamma,num_samples)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[0], r, gamma, num_samples)
     print('*')
     hlp.print_world(utility)
     print(upper_bound)
@@ -128,6 +148,7 @@ def run_russel_norvig_world_sample_policies(num_samples=1):
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
+
 
 def run_river_world():
     """Run calculation under our custom river world.
@@ -349,7 +370,7 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
             prob = russelhmm.observation_prob(obs)
             A.append((obs, prob))
             unique_obs.add(obs_tuple)
-    #print(A)
+    # print(A)
 
     # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
@@ -366,7 +387,7 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         obs = a[0]
         probability = a[1]
         probabilities.append(probability)
-        #obs = [obs[i] + 1 for i in range(len(obs))]
+        # obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
         p = posterior_marginals[1:]
@@ -1015,7 +1036,7 @@ def main():
 
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world(1000)
+            run_russel_norvig_world(100000)
             break
         elif selection == '2':
             print('you selected option 2')

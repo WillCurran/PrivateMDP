@@ -1,9 +1,10 @@
-import matplotlib.pyplot as plt
 import random
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 
-def pareto_front(utility,lower_leakage,upper_leakage,title):
+def pareto_front(utility, lower_leakage, upper_leakage, title):
     """
     Function to calculate the Pareto front
     """
@@ -15,11 +16,9 @@ def pareto_front(utility,lower_leakage,upper_leakage,title):
         if utility[sorted_indices_lower[i]] >= utility[pareto_front_lower[-1]]:
             pareto_front_lower.append(sorted_indices_lower[i])
 
-
     for i in range(1, len(sorted_indices_upper)):
         if utility[sorted_indices_upper[i]] >= utility[pareto_front_upper[-1]]:
             pareto_front_upper.append(sorted_indices_upper[i])
-
 
     pareto_front_utility = [utility[i] for i in pareto_front_lower]
     pareto_front_leakage_lower = [lower_leakage[i] for i in pareto_front_lower]
@@ -31,14 +30,16 @@ def pareto_front(utility,lower_leakage,upper_leakage,title):
     plt.scatter(pareto_front_utility, pareto_front_leakage_lower, c='red')
     plt.plot(pareto_front_utility, pareto_front_leakage_lower, '-r')
 
+    pareto_front_utility = [utility[i] for i in pareto_front_upper]
     plt.scatter(pareto_front_utility, pareto_front_leakage_upper, c='green')
     plt.plot(pareto_front_utility, pareto_front_leakage_upper, '-g')
 
+    # plot the lower bound as vertical lines
+    plt.vlines(utility, lower_leakage, upper_leakage, color='black')
+    
     plt.xlabel('Utility')
     plt.ylabel('Expected Leakage')
     plt.title(title)
     plt.show()
     return pareto_front
-
-
 
