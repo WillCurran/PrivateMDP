@@ -106,6 +106,7 @@ def main_iterative():
     p[5] = np.NaN
     p[3] = p[7] = -1
 
+    p_hist = [p.copy()]
     # Utility vectors
     u = np.array([0.0, 0.0, 0.0, 0.0,
                    0.0, 0.0, 0.0, 0.0,
@@ -131,7 +132,9 @@ def main_iterative():
                 v[0, s] = 1.0
                 # 2- Policy improvement
                 a = return_expected_action(u, T, v)
-                if a != p[s]: p[s] = a
+                if a != p[s]: 
+                    p[s] = a
+                    p_hist.append(p.copy())
         # print_policy(p, shape=(3, 4))
 
     print("=================== FINAL RESULT ==================")
@@ -144,7 +147,7 @@ def main_iterative():
     print("===================================================")
     print_policy(p, shape=(3, 4))
     print("===================================================")
-    return(T, p, u, r, gamma)
+    return(T, p, u, r, gamma, p_hist)
 
 
 def main_linalg():

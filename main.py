@@ -20,18 +20,74 @@ import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
 
 
-def run_russel_norvig_world():
+def run_russel_norvig_world(num_samples=1):
     """Run calculation under russel and norvig world.
 
     """
     hlp.print_h1('compute optimal policy')
-    T, p, u, r, gamma = russel_norvig_world.main_iterative()
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+    print(len(p_hist))
     hlp.print_h1("a priori analysis")
 
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
     print('*')
+    hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
+
+    result = []
+    for p in p_hist:
+        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples))
+        #russel_norvig_world.print_policy(p, (3, 4))
+    print(result[0])
+    print(result[-1])
+    
+    #TODO: Plot Pareto Front Here!
+
+
+def run_russel_norvig_world_all_policies(num_samples=1):
+    """Run calculation under russel and norvig world.
+
+    """
+    hlp.print_h1('compute optimal policy')
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+
+    hlp.print_h1("a priori analysis")
+
+    print("Optimal Policy:")
+    russel_norvig_world.print_policy(p, (3, 4))
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
+    print('*')
+    hlp.print_world(utility)
+    print(upper_bound)
+    print(lower_bound)
+
+    hlp.print_h2('enumerate all policies')
+    start_state = 8
+    states = [i for i in range(12)]
+    actions = [i for i in range(4)]
+    start_p = [0.0 for i in range(12)]
+    start_p[start_state] = 1.0
+
+    policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
+    result = []
+    for p in policies:
+        result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples))
+    print(len(result))
+
+def run_russel_norvig_world_sample_policies(num_samples=1):
+    """Run calculation under russel and norvig world.
+
+    """
+    hlp.print_h1('compute optimal policy')
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+    hlp.print_h1("a priori analysis")
+
+    print("Optimal Policy:")
+    russel_norvig_world.print_policy(p, (3, 4))
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma,num_samples)
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
@@ -46,14 +102,14 @@ def run_russel_norvig_world():
     policies = hlp.enumerate_policies(states, actions, [5], [3, 7])
     print("first policy returned:")
     russel_norvig_world.print_policy(policies[0], (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[0], r, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[0], r, gamma,num_samples)
     print('*')
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
     print("last policy returned:")
     russel_norvig_world.print_policy(policies[-1], (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[-1], r, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[-1], r, gamma, num_samples)
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
@@ -61,18 +117,17 @@ def run_russel_norvig_world():
     middleIndex = math.floor((len(policies) - 1) / 2)
     print(middleIndex)
     russel_norvig_world.print_policy(policies[middleIndex], (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[middleIndex], r, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policies[middleIndex], r, gamma, num_samples)
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
     print("bad policy:")
     bad_policy = (2, 2, 2, -1, 2, np.NaN, 2, -1, 2, 2, 2, 2)
     russel_norvig_world.print_policy(bad_policy, (3, 4))
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, bad_policy, r, gamma)
+    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, bad_policy, r, gamma, num_samples)
     hlp.print_world(utility)
     print(upper_bound)
     print(lower_bound)
-
 
 def run_river_world():
     """Run calculation under our custom river world.
@@ -205,7 +260,7 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
     return (u, sum(expected_leakage + [remaining_possible_leakage]), sum(expected_leakage))
 
 
-def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma):
+def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples):
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -249,23 +304,23 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # hlp.print_table(emit_p)
     # hlp.print_h2('compute most likely sequence of hidden states to the end state')
     # print('states')
-    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
+    # D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
     # print(D)
     # print('probability')
     # print(dk.path_prob(D, trans_p))
     # hlp.print_h2('compute most likely sequence of actions to the end state')
-    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
     # state_index_list, A = eppstein.extract_data("russelworld.txt", p)
     # print('Total number of action sequences')
     # print(len(A))
     # print('result')
     # print(A[0])
-    obs = A[0][0]
-    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+    # obs = A[0][0]
+    # actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
     # print(actions)
     # obs needs positive indices for viterbi alg implementation below
     # obs_original = obs
-    obs = [obs[i] + 1 for i in range(len(obs))]
+    # obs = [obs[i] + 1 for i in range(len(obs))]
     # print(obs)
     # hlp.print_h2('prior marginals')
     n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(markov_chain, start_p, 100)
@@ -282,15 +337,21 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     trans_p[7][7] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
     
-    B = []
-    for i in range(2):
+    A = []
+    unique_obs = set()
+    # while len(A) < num_samples:
+    # print(num_samples)
+    for i in range(num_samples):
         obs = hlp.execute_policy(p, T, start_state, 12)
         obs = [obs[i] + 1 for i in range(len(obs))]
-        prob = russelhmm.observation_prob(obs)
-        B.append((obs, prob))
-    print(B)
-    
-    posterior_marginals = russelhmm.forward_backward(obs)
+        obs_tuple = tuple(obs)  # Convert list to tuple for set membership test
+        if obs_tuple not in unique_obs:
+            prob = russelhmm.observation_prob(obs)
+            A.append((obs, prob))
+            unique_obs.add(obs_tuple)
+    #print(A)
+
+    # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
     future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
     # print("state probability after 100 steps")
@@ -305,7 +366,7 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         obs = a[0]
         probability = a[1]
         probabilities.append(probability)
-        obs = [obs[i] + 1 for i in range(len(obs))]
+        #obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
         p = posterior_marginals[1:]
@@ -343,7 +404,7 @@ def run_russel_norvig_world_optimal_policy_only():
     This version only analyzes the viterbi path to the end state using the optimal policy and the most likely sequence of actions.
     """
     hlp.print_h1('create markov decision process and compute optimal policy')
-    T, p, u, r, gamma = russel_norvig_world.main_iterative()
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
     hlp.print_h1("a priori analysis")
     hlp.print_h2("Create Markov Chain using MDP and Policy")
     print("optimal policy: ")
@@ -461,7 +522,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     This version only analyzes the viterbi path to the end state using the optimal policy and the most likely sequence of actions.
     """
     hlp.print_h1('create markov decision process and compute optimal policy')
-    T, p, u, r, gamma = russel_norvig_world.main_iterative()
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
     hlp.print_h1("a priori analysis")
     hlp.print_h2("Create Markov Chain using MDP and Policy")
     print("optimal policy: ")
@@ -553,7 +614,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
 
 def run_russel_norvig_world_old(obs=[]):
     hlp.print_h1('create markov decision process and compute optimal policy')
-    T, p, u, r, gamma = russel_norvig_world.main_iterative()
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
     print("======================= A Priori Analysis =======================")
     print("================== MDP + Policy = Markov Chain ==================")
     print("Policy: ")
@@ -954,7 +1015,7 @@ def main():
 
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world()
+            run_russel_norvig_world(1000)
             break
         elif selection == '2':
             print('you selected option 2')
