@@ -1,8 +1,10 @@
+import ast
 import math
+import os
 import random
 import statistics
+import time
 
-from charset_normalizer.md import ArchaicUpperLowerPlugin
 from scipy.special import rel_entr, kl_div
 from scipy.stats import entropy
 from tabulate import tabulate
@@ -88,24 +90,43 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     # for p in policies:
     #    result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
     # print(len(result))
-    
-    average_utility = [utility[8]]
-    lowers = [lower_bound]
-    uppers = [upper_bound]
-    # for r in result:
-    #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
-    #    lowers.append(r[2])
-    #    uppers.append(r[1])
-    
-    for i in range(100):
-        p = random.choice(policies)
-        print(list(p))
-        # p = policies[x]
-        result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, list(p), r, gamma, num_samples)
-        average_utility.append(result[0][8])
-        lowers.append(result[2])
-        uppers.append(result[1])
-    pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
+
+    file_name = 'run_russel_norvig_world_all_policies.csv'
+
+    if os.path.isfile(file_name):
+        print(f"The file '{file_name}' exists.")
+        df = pd.read_csv(file_name)
+    else:
+        print(f"The file '{file_name}' does not exist.")
+        state_utilities = [utility]
+        start_state_utilities = [utility[8]] 
+        lower_bounds = [lower_bound]
+        upper_bounds = [upper_bound]
+        # for r in result:
+        #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        #    lowers.append(r[2])
+        #    uppers.append(r[1])
+        #random.shuffle(policies)
+        #for i in range(3):
+            #p = list(random.choice(policies)) #Has possibility of repeating policies
+            #p = policies[i]
+        for p in policies:
+            result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            state_utilities.append(result[0])
+            start_state_utilities.append(result[0][8])
+            lower_bounds.append(result[2])
+            upper_bounds.append(result[1])
+        combined_list = [[policy, utility, lower, upper] for policy, utility, lower, upper in zip(policies, state_utilities, lower_bounds, upper_bounds)]
+        df = pd.DataFrame(combined_list, columns=['Policy', 'Utility', 'Lower Bound', 'Upper Bound'])
+        df['Utility'] = df['Utility'].apply(lambda x: str(list(x)))
+        df.to_csv(file_name, index=False)
+    # extract the required lists
+    # policy_list = df['Policy'].tolist()
+    df['Utility'] = df['Utility'].apply(ast.literal_eval)
+    start_state_utilities_list = df['Utility'].apply(lambda x: x[8]).tolist()
+    lower_bounds_list = df['Lower Bound'].tolist()
+    upper_bounds_list = df['Upper Bound'].tolist()
+    #pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
 
 
 def run_russel_norvig_world_sample_policies(num_samples=1):
@@ -1044,10 +1065,10 @@ def main():
         print('5) russel and norvig world OLD')
         print('6) river world OLD')
         selection = input('enter your selection: ')
-
+        start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world_all_policies(1000)
+            run_russel_norvig_world_all_policies(10000)
             break
         elif selection == '2':
             print('you selected option 2')
@@ -1071,7 +1092,9 @@ def main():
             break
         else:
             print('Invalid selection. Please try again.\n')
-
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time} seconds")
 
 if __name__ == "__main__":
     main()
