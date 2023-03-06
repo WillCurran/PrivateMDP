@@ -126,7 +126,7 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     start_state_utilities_list = df['Utility'].apply(lambda x: x[8]).tolist()
     lower_bounds_list = df['Lower Bound'].tolist()
     upper_bounds_list = df['Upper Bound'].tolist()
-    #pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
+    pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
 
 
 def run_russel_norvig_world_sample_policies(num_samples=1):
