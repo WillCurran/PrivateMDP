@@ -106,10 +106,10 @@ def run_russel_norvig_world_all_policies(num_samples=1):
         #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
         #    lowers.append(r[2])
         #    uppers.append(r[1])
-        #random.shuffle(policies)
-        #for i in range(3):
-            #p = list(random.choice(policies)) #Has possibility of repeating policies
-            #p = policies[i]
+        # random.shuffle(policies)
+        # for i in range(3):
+            # p = list(random.choice(policies)) #Has possibility of repeating policies
+            # p = policies[i]
         for p in policies:
             result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
             state_utilities.append(result[0])
@@ -127,6 +127,7 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     lower_bounds_list = df['Lower Bound'].tolist()
     upper_bounds_list = df['Upper Bound'].tolist()
     pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
+    # pareto.pareto_front_separate(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
 
 
 def run_russel_norvig_world_sample_policies(num_samples=1):
@@ -1095,6 +1096,7 @@ def main():
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds")
+
 
 if __name__ == "__main__":
     main()
