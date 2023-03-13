@@ -61,7 +61,7 @@ def run_russel_norvig_world(num_samples=1):
     pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
 
 
-def run_russel_norvig_world_all_policies(num_samples=1):
+def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     """Run calculation under russel and norvig world.
 
     """
@@ -72,6 +72,7 @@ def run_russel_norvig_world_all_policies(num_samples=1):
 
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
+    print(p)
     utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
     print('*')
     hlp.print_world(utility)
@@ -106,11 +107,14 @@ def run_russel_norvig_world_all_policies(num_samples=1):
         #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
         #    lowers.append(r[2])
         #    uppers.append(r[1])
-        # random.shuffle(policies)
+        if(np.isinf(num_policies)):
+            random.shuffle(policies)
         # for i in range(3):
             # p = list(random.choice(policies)) #Has possibility of repeating policies
-            # p = policies[i]
-        for p in policies:
+            # p = policies[i]'
+        length = int(np.minimum(len(policies), num_policies))
+        for i in range(length):
+            p = policies[i]
             result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
             state_utilities.append(result[0])
             start_state_utilities.append(result[0][8])
@@ -123,11 +127,12 @@ def run_russel_norvig_world_all_policies(num_samples=1):
     # extract the required lists
     # policy_list = df['Policy'].tolist()
     df['Utility'] = df['Utility'].apply(ast.literal_eval)
-    start_state_utilities_list = df['Utility'].apply(lambda x: x[8]).tolist()
+    start_state_utilities_list = df['Utility'].apply(lambda x: x[8] * -1).tolist()
     lower_bounds_list = df['Lower Bound'].tolist()
     upper_bounds_list = df['Upper Bound'].tolist()
+    # pareto.plot_bounds(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
     pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
-    # pareto.pareto_front_separate(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
+    # pareto.pareto_front_separate(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Lower Bound Pareto Front", "Upper Bound Pareto")
 
 
 def run_russel_norvig_world_sample_policies(num_samples=1):
@@ -1070,6 +1075,7 @@ def main():
         if selection == '1':
             print('you selected option 1')
             run_russel_norvig_world_all_policies(10000)
+            # run_russel_norvig_world_sample_policies(10)
             break
         elif selection == '2':
             print('you selected option 2')
