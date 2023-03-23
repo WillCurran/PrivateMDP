@@ -24,18 +24,24 @@ import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
 
 
-def examine_russel_norvig_world(exponent=10000):
+def examine_russel_norvig_world(exponent=4):
     file_name = 'run_russel_norvig_world_all_policies.csv'
+    df = pd.read_csv(file_name)
+    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    print(df['start_state_utility'])
+    df['delta'] = df['Upper Bound'] - df['Lower Bound']
+    df_grouped = df.groupby(['start_state_utility'])
+    print(df_grouped['delta'].min())  # .to_csv('selected_policies.csv', index=False)
+    file_name = 'examine_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
     else:
         print(f"The file '{file_name}' does not exist.")
-    df = pd.read_csv(file_name)
-    df_start_8 = df[df['Policy'].str.split(',', expand=True)[8] == ' 0)']
-    df_grouped = df_start_8.groupby('Utility').apply(
-        lambda x: x.loc[(x['Upper_Bound'] - x['Lower_Bound']).idxmin()])
-    df_grouped.to_csv('selected_policies.csv', index=False)
+    
+    print(df.iloc[df_grouped['delta'].idxmin()])
+    for p in df.iloc[df_grouped['delta'].idxmin()].iterrows():
+        print(p)
 
 
 def run_russel_norvig_world(num_samples=1):
@@ -796,9 +802,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -849,7 +855,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1013,9 +1019,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1063,7 +1069,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
