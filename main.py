@@ -24,7 +24,7 @@ import policy_iteration as russel_norvig_world
 import policy_iteration2 as river_world
 
 
-def examine_russel_norvig_world(exponent=4):
+def examine_russel_norvig_world(exponent=3):
     file_name = 'run_russel_norvig_world_all_policies.csv'
     df = pd.read_csv(file_name)
     df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
@@ -39,9 +39,40 @@ def examine_russel_norvig_world(exponent=4):
     else:
         print(f"The file '{file_name}' does not exist.")
     
+    hlp.print_h1('compute optimal policy')
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+    
     print(df.iloc[df_grouped['delta'].idxmin()])
+    result_list = []
+    start_state_utilities_list = []
+    lower_bounds_list = []
+    upper_bounds_list = []
     for p in df.iloc[df_grouped['delta'].idxmin()].iterrows():
-        print(p)
+        # Iterate over the range of exponents
+        for e in range(exponent+1):
+    
+            # Calculate n = 10^exponent
+            n = math.pow(10, e)
+            policy_str = p[1]['Policy']
+            policy_list = list(map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
+            # Call the function with n and get the result
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
+    
+            # Append the result and other object properties to the result list
+            result_list.append({
+                'Policy': policy_list,
+                'Utility': p[1]['Utility'],
+                'start_state_utility': p[1]['start_state_utility'],
+                'Lower Bound': lower_bound,
+                'Upper Bound': upper_bound,
+                'exponent': e
+            })
+            start_state_utilities_list.append(p[1]['start_state_utility'])
+            lower_bounds_list.append(lower_bound)
+            upper_bounds_list.append(upper_bound)
+            
+    print(len(result_list))
+    pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
 
 
 def run_russel_norvig_world(num_samples=1):
