@@ -1033,7 +1033,7 @@ def run_river_world_old(obs=[]):
     print("============================Dijkstra===========================")
     # print(trans_p)
 
-    # g = trans_to_graph(trans_p)
+    #g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
     # D = (dk.dijkstra(trans_p, start_state, 7, None, 3))
     # print(D)
