@@ -75,6 +75,65 @@ def examine_russel_norvig_world(exponent=3):
     pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
 
 
+def examine_russel_norvig_world_seperated(exponent=3):
+    file_name = 'run_russel_norvig_world_all_policies.csv'
+    df = pd.read_csv(file_name)
+    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    print(df['start_state_utility'])
+    df['delta'] = df['Upper Bound'] - df['Lower Bound']
+    df_grouped = df.groupby(['start_state_utility'])
+    print(df_grouped['delta'].min())  # .to_csv('selected_policies.csv', index=False)
+    file_name = 'examine_russel_norvig_world_all_policies.csv'
+
+    if os.path.isfile(file_name):
+        print(f"The file '{file_name}' exists.")
+    else:
+        print(f"The file '{file_name}' does not exist.")
+    
+    hlp.print_h1('compute optimal policy')
+    T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+    
+    print(df.iloc[df_grouped['delta'].idxmin()])
+    min_delta_idx = df_grouped['delta'].idxmin()
+    result_array =  np.empty((len(min_delta_idx),exponent+1), dtype=object)
+    for i, p in enumerate(df.iloc[min_delta_idx].iterrows()):
+        # Iterate over the range of exponents
+        for j in range(exponent+1):
+    
+            # Calculate n = 10^exponent
+            n = math.pow(10, j)
+            policy_str = p[1]['Policy']
+            policy_list = list(map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
+            # Call the function with n and get the result
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
+    
+            # Append the result and other object properties to the result list
+            
+            result = {
+                'Policy': policy_list,
+                'Utility': p[1]['Utility'],
+                'start_state_utility': p[1]['start_state_utility'],
+                'Lower Bound': lower_bound,
+                'Upper Bound': upper_bound,
+                'exponent': j
+            }
+            result_array[i][j] = result
+            # Create an empty list to hold the 'exponent' values
+    # Iterate over the columns in the 2D array of objects
+    for j in range(exponent+1):
+        column_objects = result_array[:, j]
+        exponents_list = []
+        start_state_utilities_list = []
+        lower_bounds_list = []
+        upper_bounds_list = []
+        for obj in column_objects:
+            exponents_list.append(obj['exponent'])
+            start_state_utilities_list.append(obj['start_state_utility'])
+            lower_bounds_list.append(obj['Lower Bound'])
+            upper_bounds_list.append(obj['Upper Bound'])
+        pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
+
+
 def run_russel_norvig_world(num_samples=1):
     """Run calculation under russel and norvig world.
 
@@ -1200,7 +1259,7 @@ def main():
             break
         elif selection == '7':
             print('you selected option 7')
-            examine_russel_norvig_world()
+            examine_russel_norvig_world_seperated()
             break
         else:
             print('Invalid selection. Please try again.\n')
