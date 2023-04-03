@@ -62,7 +62,7 @@ def run_eppstein():
     start_p[start_state] = 1.0
 
     policies = h.enumerate_policies(states, actions, [5], [3, 7])
-
+    policies_outputs = []
     length = len(policies)
     length = 1
     for i in range(length):
@@ -105,12 +105,14 @@ def run_eppstein():
         for t in data:
             
             print(t)
+
+        policies_outputs.append(data)
         
 
     # Stop the JVM
     jpype.shutdownJVM()
 
-    return data
+    return policies_outputs
 
 
 def main():
