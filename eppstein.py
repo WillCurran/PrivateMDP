@@ -76,6 +76,8 @@ def run_eppstein():
 
         classname = "edu.ufl.cise.bsmock.graph.ksp.test.TestEppstein"
         MyClass = jpype.JClass(classname)
+        output_stream = jpype.JPackage('java.io').ByteArrayOutputStream()
+        jpype.JPackage('java.lang').System.setOut(jpype.JPackage('java.io').PrintStream(output_stream))
 
         trans_to_graph(trans_p, i)
         start = str(start_state)
@@ -85,14 +87,30 @@ def run_eppstein():
                 str(i) + ".csv", start, end, k]
         # Call a method in the Java class with arguments
         print('Run Eppstein Java Code')
-        result = MyClass.main(args)
+        MyClass.main(args)
+        result = str(output_stream.toString())
         print('result')
-        print(result)
+        data = []
+        
+        #Parse result string to create array of tuples
+        #(probability, states, actions)
+        for line in result.splitlines()[:-1]:
+            parts = line.split(':')
+            num = float(parts[0])
+            arr_str = parts[1].strip()[1:-1]
+            arr = [int(x) for x in arr_str.split(',')]
+            actions = [p[x] for x in arr]
+            data.append((num, arr, actions))
+        
+        for t in data:
+            
+            print(t)
+        
 
     # Stop the JVM
     jpype.shutdownJVM()
 
-    return
+    return data
 
 
 def main():
