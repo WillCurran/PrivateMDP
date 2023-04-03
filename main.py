@@ -31,17 +31,18 @@ def examine_russel_norvig_world(exponent=3):
     print(df['start_state_utility'])
     df['delta'] = df['Upper Bound'] - df['Lower Bound']
     df_grouped = df.groupby(['start_state_utility'])
-    print(df_grouped['delta'].min())  # .to_csv('selected_policies.csv', index=False)
+    # .to_csv('selected_policies.csv', index=False)
+    print(df_grouped['delta'].min())
     file_name = 'examine_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
     else:
         print(f"The file '{file_name}' does not exist.")
-    
+
     hlp.print_h1('compute optimal policy')
     T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
-    
+
     print(df.iloc[df_grouped['delta'].idxmin()])
     result_list = []
     start_state_utilities_list = []
@@ -50,14 +51,16 @@ def examine_russel_norvig_world(exponent=3):
     for p in df.iloc[df_grouped['delta'].idxmin()].iterrows():
         # Iterate over the range of exponents
         for e in range(exponent+1):
-    
+
             # Calculate n = 10^exponent
             n = math.pow(10, e)
             policy_str = p[1]['Policy']
-            policy_list = list(map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
+            policy_list = list(
+                map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
             # Call the function with n and get the result
-            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
-    
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
+                T, policy_list, r, gamma, int(n))
+
             # Append the result and other object properties to the result list
             result_list.append({
                 'Policy': policy_list,
@@ -70,9 +73,10 @@ def examine_russel_norvig_world(exponent=3):
             start_state_utilities_list.append(p[1]['start_state_utility'])
             lower_bounds_list.append(lower_bound)
             upper_bounds_list.append(upper_bound)
-            
+
     print(len(result_list))
-    pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
+    pareto.pareto_front(start_state_utilities_list,
+                        lower_bounds_list, upper_bounds_list, "Pareto")
 
 
 def examine_russel_norvig_world_seperated(exponent=3):
@@ -82,33 +86,36 @@ def examine_russel_norvig_world_seperated(exponent=3):
     print(df['start_state_utility'])
     df['delta'] = df['Upper Bound'] - df['Lower Bound']
     df_grouped = df.groupby(['start_state_utility'])
-    print(df_grouped['delta'].min())  # .to_csv('selected_policies.csv', index=False)
+    # .to_csv('selected_policies.csv', index=False)
+    print(df_grouped['delta'].min())
     file_name = 'examine_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
     else:
         print(f"The file '{file_name}' does not exist.")
-    
+
     hlp.print_h1('compute optimal policy')
     T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
-    
+
     print(df.iloc[df_grouped['delta'].idxmin()])
     min_delta_idx = df_grouped['delta'].idxmin()
-    result_array =  np.empty((len(min_delta_idx),exponent+1), dtype=object)
+    result_array = np.empty((len(min_delta_idx), exponent+1), dtype=object)
     for i, p in enumerate(df.iloc[min_delta_idx].iterrows()):
         # Iterate over the range of exponents
         for j in range(exponent+1):
-    
+
             # Calculate n = 10^exponent
             n = math.pow(10, j)
             policy_str = p[1]['Policy']
-            policy_list = list(map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
+            policy_list = list(
+                map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
             # Call the function with n and get the result
-            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
-    
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
+                T, policy_list, r, gamma, int(n))
+
             # Append the result and other object properties to the result list
-            
+
             result = {
                 'Policy': policy_list,
                 'Utility': p[1]['Utility'],
@@ -131,7 +138,8 @@ def examine_russel_norvig_world_seperated(exponent=3):
             start_state_utilities_list.append(obj['start_state_utility'])
             lower_bounds_list.append(obj['Lower Bound'])
             upper_bounds_list.append(obj['Upper Bound'])
-        pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
+        pareto.pareto_front(start_state_utilities_list, lower_bounds_list,
+                            upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
 
 
 def run_russel_norvig_world(num_samples=1):
@@ -892,9 +900,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" + 
+    print("Expected visits: \n" +
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
+    print("Sum of expected visits should = 1 + t. %.2f == %d." %
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -945,7 +953,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" + 
+        print("Actual expected visits given single execution: \n" +
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1109,9 +1117,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" + 
+    print("Expected visits: \n" +
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
+    print("Sum of expected visits should = 1 + t. %.2f == %d." %
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1159,7 +1167,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" + 
+        print("Actual expected visits given single execution: \n" +
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)

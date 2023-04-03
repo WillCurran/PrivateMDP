@@ -1,11 +1,14 @@
-import policy_iteration as russel_norvig_world
-import helpers as h
-import jpype
-import os
 import math
-import pandas as pd
+import os
 
-def extract_data(filename,pi):
+import jpype
+
+import helpers as h
+import pandas as pd
+import policy_iteration as russel_norvig_world
+
+
+def extract_data(filename, pi):
     data = []
     obs = []
     with open(filename, 'r') as f:
@@ -27,8 +30,8 @@ def extract_data(filename,pi):
                     append = False
                     break
             if append:
-                obs.append((actions,float_num))
-            
+                obs.append((actions, float_num))
+
     return data, obs
 
 
@@ -37,13 +40,15 @@ def trans_to_graph(trans_p, num):
     for i in range(len(trans_p)):
         for j in range(len(trans_p[i])):
             if trans_p[i][j] != 0:
-                g.append((str(i),str(j),str(-math.log(trans_p[i][j]))))
-    
+                g.append((str(i), str(j), str(-math.log(trans_p[i][j]))))
+
     df = pd.DataFrame(g)
-    df.to_csv("eppstein_files/eppstein_graph" + str(num) + ".csv",index=False,sep=" ",header=False)
+    df.to_csv("eppstein_files/eppstein_graph" + str(num) +
+              ".csv", index=False, sep=" ", header=False)
     print(g)
 
     return g
+
 
 def run_eppstein():
     jpype.startJVM()
@@ -64,7 +69,7 @@ def run_eppstein():
         p = policies[i]
 
         states, start_p, trans_p, emit_p = h.to_hidden_markov_model(
-        T, p, 12, 4, start_state)
+            T, p, 12, 4, start_state)
 
         classpath = os.getcwd() + "/k-shortest-paths-master/out/production/k-shortest-paths-master"
         jpype.addClassPath(classpath)
@@ -72,24 +77,27 @@ def run_eppstein():
         classname = "edu.ufl.cise.bsmock.graph.ksp.test.TestEppstein"
         MyClass = jpype.JClass(classname)
 
-        trans_to_graph(trans_p,i)
+        trans_to_graph(trans_p, i)
         start = str(start_state)
         end = str(3)
         k = str(100)
-        args = ["eppstein_files/eppstein_graph" + str(i) + ".csv",start,end,k]
+        args = ["eppstein_files/eppstein_graph" +
+                str(i) + ".csv", start, end, k]
         # Call a method in the Java class with arguments
+        print('Run Eppstein Java Code')
         result = MyClass.main(args)
-
+        print('result')
+        print(result)
 
     # Stop the JVM
     jpype.shutdownJVM()
-    
+
     return
 
-def main():
-    
-    run_eppstein()
 
+def main():
+
+    run_eppstein()
 
 
 if __name__ == "__main__":
