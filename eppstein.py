@@ -6,7 +6,7 @@ import jpype
 import helpers as h
 import pandas as pd
 import policy_iteration as russel_norvig_world
-
+import dijkstras as dk
 
 def extract_data(filename, pi):
     data = []
@@ -43,9 +43,9 @@ def trans_to_graph(trans_p, num):
                 g.append((str(i), str(j), str(-math.log(trans_p[i][j]))))
 
     df = pd.DataFrame(g)
-    df.to_csv("eppstein_files/eppstein_graph" + str(num) +
+    df.to_csv("eppstein_files/eppstein_graph" + str(num%1) +
               ".csv", index=False, sep=" ", header=False)
-    print(g)
+    
 
     return g
 
@@ -64,13 +64,19 @@ def run_eppstein():
     policies = h.enumerate_policies(states, actions, [5], [3, 7])
     policies_outputs = []
     length = len(policies)
-    length = 1
     for i in range(length):
         p = policies[i]
-
+        print(i)
+        #russel_norvig_world.print_policy(p,(3,4))
         states, start_p, trans_p, emit_p = h.to_hidden_markov_model(
             T, p, 12, 4, start_state)
 
+        #Add viterbi to check if possible
+        #if not continue
+        d = dk.dijkstra2(trans_p,start_state,3)
+        if(len(d) == 0):
+            print("FAILED")
+            continue
         classpath = os.getcwd() + "/k-shortest-paths-master/out/production/k-shortest-paths-master"
         jpype.addClassPath(classpath)
 
@@ -82,14 +88,14 @@ def run_eppstein():
         trans_to_graph(trans_p, i)
         start = str(start_state)
         end = str(3)
-        k = str(100)
+        k = str(1000)
         args = ["eppstein_files/eppstein_graph" +
-                str(i) + ".csv", start, end, k]
+                str(i%1) + ".csv", start, end, k]
         # Call a method in the Java class with arguments
-        print('Run Eppstein Java Code')
+        #print('Run Eppstein Java Code')
         MyClass.main(args)
         result = str(output_stream.toString())
-        print('result')
+        #print('result')
         data = []
         
         #Parse result string to create array of tuples
@@ -102,11 +108,12 @@ def run_eppstein():
             actions = [p[x] for x in arr]
             data.append((num, arr, actions))
         
-        for t in data:
+        # for t in data:
             
-            print(t)
+        #     print(t)
 
         policies_outputs.append(data)
+        #print('================================================================')
         
 
     # Stop the JVM

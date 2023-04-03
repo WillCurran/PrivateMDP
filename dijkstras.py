@@ -69,6 +69,46 @@ def dijkstra(T, start, goal, prev_edge, max_repeats):
 
     return path
 
+def dijkstra2(T, start, goal):
+    distances = {}
+    previous = {}
+    for node in range(len(T)):
+        distances[node] = math.inf
+        previous[node] = -1
+
+    min_heap = [(0, start)]
+    distances[start] = 0
+    previous[start] = -1
+    max_time = 11
+
+    num_pops = 0
+
+    path = []
+    while(len(min_heap) != 0):
+        value, curr_state = heapq.heappop(min_heap)
+        num_pops += 1
+        # if(prev_edge != None and num_pops == 2):
+        #     T[prev_edge[0]][prev_edge[1]] = prev_edge[2]
+        if(curr_state == goal):
+            while curr_state != -1:
+                # print("State: " + str(curr_state))
+                path = [curr_state] + path
+                curr_state = previous[curr_state]
+            break
+        curr_adj = T[curr_state]
+        node = 0
+        for weight in curr_adj:
+            if weight != 0:
+                weight = -1 * math.log(weight)
+                alt = distances[curr_state] + weight
+                if alt < distances[node]:
+                    distances[node] = alt
+                    previous[node] = curr_state
+                    heapq.heappush(min_heap, (alt, node))
+            node += 1
+
+
+    return path
 
 def dijkstra_retry(T, start, goal, prev_edge, curr_repeat):
     distances = {}
