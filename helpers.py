@@ -163,7 +163,7 @@ def to_hidden_markov_model(transition_matrix, policy, number_of_states, number_o
 
     # Viterbi needs 12x12 transition matrix
     # Generate the one induced by the policy
-    
+
     trans_p = []
     for i in range(number_of_states):
         trans_p.append([0.0 for j in range(number_of_states)])
@@ -208,10 +208,10 @@ def kl_divergence_for_each_state(p, q):
 def stationary_distribution(P):
     # Find the eigenvalues and eigenvectors
     eigenvalues, eigenvectors = np.linalg.eig(P.T)
-    
+
     # Find the index of the eigenvalue of 1
     index = np.where(np.isclose(eigenvalues, 1))[0][0]
-    
+
     # Normalize the eigenvector to obtain the stationary distribution
     stationary_dist = np.real(eigenvectors[:, index] / eigenvectors[:, index].sum())
     return stationary_dist
@@ -235,125 +235,6 @@ def equilibrium_distribution(transition_matrix, max_iter=100, tol=1e-8):
         if np.linalg.norm(distribution - prev_distribution) < tol:
             break
     return distribution
-
-
-def equilibrium_distribution_2(transition_matrix, max_iter=100, tol=1e-8):
-    """
-    Calculates the equilibrium distribution using power iteration.
-    transition_matrix: an array with shape (num_states, num_states, num_actions)
-    max_iter: maximum number of iterations
-    tol: tolerance for convergence
-    """
-    num_states, _, num_actions = transition_matrix.shape
-    # Initialize distribution as uniform
-    distribution = np.ones((num_states,)) / num_states
-    for i in range(max_iter):
-        prev_distribution = distribution
-        # Calculate new distribution
-        distribution = np.sum(transition_matrix[:,:, i] @ distribution, axis=0)
-        # Check for convergence
-        if np.linalg.norm(distribution - prev_distribution) < tol:
-            break
-    return distribution
-
-
-def equilibrium_distribution_eigen_3d_cols(P, pi):
-    """
-    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using eigenvectors
-    :param P: Transition matrix, indexed by source state, next state, and action
-    :param pi: Initial distribution
-    :return: Equilibrium distribution
-    # Transition matrix, indexed by source state, next state, and action
-    P = np.random.rand(12, 12, 4)
-    
-    # Initial distribution
-    pi = np.ones(12)/12
-    
-    # Normalize the transition matrix by columns
-    P /= P.sum(axis=-1, keepdims=True)
-    
-    # Calculate equilibrium distribution
-    pi_star = equilibrium_distribution_eigen_3d_cols(P, pi)
-    print(pi_star)
-    """
-    # Sum over the action dimension
-    P_flat = P.sum(axis=-2)
-    # Transpose the matrix
-    P_flat = P_flat.T
-    # Calculate eigenvalues and eigenvectors
-    eigenvalues, eigenvectors = np.linalg.eig(P_flat)
-    # Find the index of the eigenvalue closest to 1
-    index = (np.abs(eigenvalues - 1)).argmin()
-    # Normalize the corresponding eigenvector
-    pi_star = eigenvectors[:, index] / eigenvectors[:, index].sum()
-    # reshape it to the original shape of pi
-    pi_star = pi_star.reshape(pi.shape)
-    return pi_star
-
-
-def equilibrium_distribution_perron_frobenius_3d_cols(P, pi):
-    """
-    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using the Perron-Frobenius theorem
-    :param P: Transition matrix, indexed by source state, next state, and action
-    :param pi: Initial distribution
-    :return: Equilibrium distribution
-
-    # Transition matrix, indexed by source state, next state, and action
-    P = np.random.rand(12, 12, 4)
-
-    # Initial distribution
-    pi = np.ones(12)/12
-
-    # Normalize the transition matrix by columns
-    P /= P.sum(axis=-1, keepdims=True)
-
-    # Calculate equilibrium distribution
-    pi_star = equilibrium_distribution_perron_frobenius_3d_cols(P, pi)
-    print(pi_star)
-    """
-    # Sum over the action dimension
-    P_flat = P.sum(axis=-2)
-    # Calculate eigenvalues and eigenvectors
-    eigenvalues, eigenvectors = np.linalg.eig(P_flat)
-    # Find the eigenvalue closest to 1
-    index = (np.abs(eigenvalues - 1)).argmin()
-    pi_star = eigenvectors[:, index] / eigenvectors[:, index].sum()
-    # reshape it to the original shape of pi
-    pi_star = pi_star.reshape(pi.shape)
-    return pi_star
-
-
-def equilibrium_distribution_power_iteration_3d_cols(P, pi, epsilon=1e-8, max_iter=1000):
-    """
-    Calculate the equilibrium distribution for a 3-dimensional transition matrix indexed by source state, next state, and action and are stochastic by columns using power iteration method
-    :param P: Transition matrix, indexed by source state, next state, and action
-    :param pi: Initial distribution
-    :param epsilon: Tolerance for convergence
-    :param max_iter: Maximum number of iterations
-    :return: Equilibrium distribution
-    EX: 
-    # Transition matrix, indexed by source state, next state, and action
-    P = np.random.rand(12, 12, 4)
-
-    # Initial distribution
-    pi = np.ones(12)/12
-
-    # Normalize the transition matrix by columns
-    P /= P.sum(axis=-1, keepdims=True)
-
-    # Calculate equilibrium distribution
-    pi_star = equilibrium_distribution_power_iteration_3d_cols(P, pi)
-    print(pi_star)
-    """
-    # Sum over the action dimension
-    P_flat = P.sum(axis=-1)
-    pi_star = pi.copy()
-    for _ in range(max_iter):
-        pi_prev = pi_star.copy()
-        pi_star = pi_star.dot(P_flat)
-        if np.allclose(pi_prev, pi_star, atol=epsilon):
-            break
-    return pi_star
 
 
 def equilibrium_distribution_power_iteration_3d_cols_left(P, pi, epsilon=1e-8, max_iter=1000):
@@ -410,7 +291,7 @@ def is_irreducible_aperiodic(P):
         print(pi_star)
     else:
         print("The matrix is not irreducible and aperiodic")
-        
+
     """
     P_n = np.linalg.matrix_power(P, 100)
     return (P_n > 0).all()
@@ -418,9 +299,9 @@ def is_irreducible_aperiodic(P):
 
 def enumerate_policies(states, actions, obstacles, terminals):
     """enumerate all policies of an MDP
-    
+
     defining the MDP as a tuple (S, A, T, R, gamma) where:
-    
+
     S is the set of states
     A is the set of actions
     T is the transition model, which is a probability distribution over 
@@ -429,7 +310,7 @@ def enumerate_policies(states, actions, obstacles, terminals):
     values: R(s, a)
     gamma is the discount factor, which determines the importance of future 
     rewards compared to current rewards
-    
+
     Then, you can define a function that takes an MDP as input and returns a 
     list of policies. A policy is a function that maps states to actions. 
     To enumerate all policies, you can create a list of all possible functions
@@ -437,7 +318,7 @@ def enumerate_policies(states, actions, obstacles, terminals):
     list of all possible combinations of states and actions, and then creating 
     a function for each combination that returns the action for the corresponding 
     state.
-    
+
     EX:
     # Define an MDP
     mdp = (['s1', 's2', 's3'], ['a1', 'a2'], T, R, gamma)
@@ -453,7 +334,7 @@ def enumerate_policies(states, actions, obstacles, terminals):
     for terminal in terminals:
         selections[terminal] = [-1]
     # Use itertools.product to generate all possible combinations of selections
-    
+
     combinations = itertools.product(*selections)
     policies = np.fromiter(combinations, dtype=object)
     print("expected number of policies:")

@@ -1,5 +1,7 @@
 # https://github.com/aehuynh/hidden-markov-model
 
+import pybeam
+
 import numpy as np
 import pandas as pd
 
@@ -203,6 +205,47 @@ class HMM:
         self.B = self.B * rows_to_keep_B + next_B
         self.pi = gamma[:, 0] / np.sum(gamma[:, 0])
 
+    def viterbi_beam(self, obs, n):
+        N = self.A.shape[0]
+        T = len(obs)
+        # Initialize the first column of the trellis.
+        trellis = [{state: {'prob': self.pi[state] * self.B[state][obs[0]], 'prev': None} for state in range(N)}]
+        if n == 1:
+            V, prev = self.viterbi(obs)
+            last_state = np.argmax(V[:, -1])
+            path = list(self.build_viterbi_path(prev, last_state))[::-1]
+            return [path]
+        # Iterate over the observations, computing the most likely state at each time step.
+        for i in range(1, T):
+            # Use beam search to limit the number of states considered at each time step.
+            beam_width = n if n < N else N
+            candidates = sorted(trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
+
+            # Update the trellis with the most likely states for this observation.
+            trellis.append({})
+            for state, prev_state_info in candidates:
+                max_prob = float('-inf')
+                max_prev = None
+                for prev_state, prev_state_info in trellis[-2].items():
+                    prob = prev_state_info['prob'] * self.A[prev_state][state] * self.B[state][obs[i]]
+                    if prob > max_prob:
+                        max_prob = prob
+                        max_prev = prev_state
+                trellis[-1][state] = {'prob': max_prob, 'prev': max_prev}
+
+        # Find the n most likely state sequences by backtracking through the trellis.
+        sequences = []
+        beam_width = n if n < N else N
+        candidates = sorted(trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
+        for state, state_info in candidates:
+            sequence = [state]
+            prev_state = trellis[-1][state]['prev']
+            for i in range(T - 2, -1, -1):
+                sequence.insert(0, prev_state)
+                prev_state = trellis[i][prev_state]['prev']
+            sequences.append(sequence)
+        return sequences
+
 
 def example():
     umbrella_transition = [[0.7, 0.3], [0.3, 0.7]]
@@ -213,9 +256,13 @@ def example():
     umbrella_evidence = [0, 0, 1, 0, 0]
     # result = umbrellaHMM.forward(umbrella_evidence)
     # result = umbrellaHMM.backward(umbrella_evidence)
-    result = umbrellaHMM.forward_backward(umbrella_evidence)
-    # result = umbrellaHMM.viterbi(umbrella_evidence)
-    return (result)
+    # result = umbrellaHMM.forward_backward(umbrella_evidence)
+    V, prev = umbrellaHMM.viterbi(umbrella_evidence)
+    last_state = np.argmax(V[:, -1])
+    path = list(umbrellaHMM.build_viterbi_path(prev, last_state))[::-1]
+    print(path)
+    result = umbrellaHMM.viterbi_beam(umbrella_evidence, 10)
+    return result
 
 
 def main():

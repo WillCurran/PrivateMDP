@@ -50,7 +50,7 @@ def examine_russel_norvig_world(exponent=3):
     upper_bounds_list = []
     for p in df.iloc[df_grouped['delta'].idxmin()].iterrows():
         # Iterate over the range of exponents
-        for e in range(exponent+1):
+        for e in range(exponent + 1):
 
             # Calculate n = 10^exponent
             n = math.pow(10, e)
@@ -100,10 +100,10 @@ def examine_russel_norvig_world_seperated(exponent=3):
 
     print(df.iloc[df_grouped['delta'].idxmin()])
     min_delta_idx = df_grouped['delta'].idxmin()
-    result_array = np.empty((len(min_delta_idx), exponent+1), dtype=object)
+    result_array = np.empty((len(min_delta_idx), exponent + 1), dtype=object)
     for i, p in enumerate(df.iloc[min_delta_idx].iterrows()):
         # Iterate over the range of exponents
-        for j in range(exponent+1):
+        for j in range(exponent + 1):
 
             # Calculate n = 10^exponent
             n = math.pow(10, j)
@@ -127,7 +127,7 @@ def examine_russel_norvig_world_seperated(exponent=3):
             result_array[i][j] = result
             # Create an empty list to hold the 'exponent' values
     # Iterate over the columns in the 2D array of objects
-    for j in range(exponent+1):
+    for j in range(exponent + 1):
         column_objects = result_array[:, j]
         exponents_list = []
         start_state_utilities_list = []
@@ -866,13 +866,14 @@ def run_russel_norvig_world_old(obs=[]):
 
     # Calculate equilibrium distribution
     print(np.shape(T))
-    # equilibrium = hlp.equilibrium_distribution_2(T)
+    # equilibrium = hlp.equilibrium_distribution(T)
     equilibrium_dist = hlp.equilibrium_distribution_power_iteration_3d_cols_left(
         T, np.array(start_p))
     print(equilibrium_dist)
     print("======================= Stationary Distribtuion of Markov Chain=======================")
     stationary_dist = hlp.stationary_distribution(np.array(markov_chain))
     print(stationary_dist)
+    print("======================= Posteriori Analysis =====================")
     print("=========================== Create HMM ==========================")
     start_state = 8
     states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(
@@ -900,9 +901,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -953,7 +954,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1100,7 +1101,7 @@ def run_river_world_old(obs=[]):
     print("============================Dijkstra===========================")
     # print(trans_p)
 
-    #g = trans_to_graph(trans_p)
+    # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
     # D = (dk.dijkstra(trans_p, start_state, 7, None, 3))
     # print(D)
@@ -1117,9 +1118,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1167,7 +1168,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
