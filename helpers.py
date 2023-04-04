@@ -14,7 +14,7 @@ CMP_DELTA = 0.000001
 
 
 def information_gain(Q, P, s, path_probability):
-    """Calculate a bound for expected(?) information gain given one execution of viturbi on one string of observations
+    """Calculate a bound for expected(?) information gain given one execution of viterbi on one string of observations
     Q is the "prior" distribution over all states for a certain time
     P is the "posterior" distribution over all states for a certain time
     s is the state we are interested in

@@ -383,7 +383,7 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
     # print(len(A))
     # print('result')
     # print(A[0])
-    obs = A[0][0]
+    obs = A[0][2]
     actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
     # print(actions)
     # obs needs positive indices for viterbi alg implementation below
@@ -502,25 +502,6 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # hlp.print_table(emit_p)
     # hlp.print_h2('compute most likely sequence of hidden states to the end state')
     # print('states')
-    # D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
-    # print(D)
-    # print('probability')
-    # print(dk.path_prob(D, trans_p))
-    # hlp.print_h2('compute most likely sequence of actions to the end state')
-    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
-    # state_index_list, A = eppstein.extract_data("russelworld.txt", p)
-    # print('Total number of action sequences')
-    # print(len(A))
-    # print('result')
-    # print(A[0])
-    # obs = A[0][0]
-    # actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
-    # print(actions)
-    # obs needs positive indices for viterbi alg implementation below
-    # obs_original = obs
-    # obs = [obs[i] + 1 for i in range(len(obs))]
-    # print(obs)
-    # hlp.print_h2('prior marginals')
     n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
     n_trans_p = np.array(n_trans_p)
@@ -607,9 +588,9 @@ def run_russel_norvig_world_optimal_policy_only():
 
     This version only analyzes the viterbi path to the end state using the optimal policy and the most likely sequence of actions.
     """
-    hlp.print_h1('create markov decision process and compute optimal policy')
+    hlp.print_h2('create markov decision process and compute optimal policy')
     T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
-    hlp.print_h1("a priori analysis")
+    hlp.print_h2("a priori analysis")
     hlp.print_h2("Create Markov Chain using MDP and Policy")
     print("optimal policy: ")
     policy = [np.NaN if np.isnan(i) else int(i) for i in p]
@@ -641,27 +622,7 @@ def run_russel_norvig_world_optimal_policy_only():
     hlp.print_table(trans_p)
     print('emissions distribution')
     hlp.print_table(emit_p)
-    hlp.print_h2(
-        'compute most likely sequence of hidden states to the end state')
-    print('states')
-    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
-    print(D)
-    print('probability')
-    print(dk.path_prob(D, trans_p))
-    hlp.print_h2('compute most likely sequence of actions to the end state')
-    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
-    state_index_list, A = eppstein.extract_data("russelworld.txt", p)
-    print('Total number of action sequences')
-    print(len(A))
-    print('result')
-    print(A[0])
-    obs = A[0][0]
-    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
-    print(actions)
-    # obs needs positive indices for viterbi alg implementation below
-    # obs_original = obs
-    obs = [obs[i] + 1 for i in range(len(obs))]
-    print(obs)
+
     hlp.print_h2('prior marginals')
     n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
@@ -672,12 +633,33 @@ def run_russel_norvig_world_optimal_policy_only():
     least_likely_future_state = np.where(
         n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
     print(least_likely_future_state[0][0])
+
     hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+
+    hlp.print_h2('compute most likely sequence of actions to the end state')
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    state_index_list, A = eppstein.extract_data("russelworld.txt", p)
+    print('result')
+    print(A[0])
+    obs = A[0][0]
+    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+    print(actions)
+    # obs needs positive indices for viterbi alg implementation below
+    # obs_original = obs
+    obs = [obs[i] + 1 for i in range(len(obs))]
+    print(obs)
+
+    hlp.print_h2('compute most likely sequence of hidden states to the end state')
+    V, prev = russelhmm.viterbi(obs)
+    last_state = np.argmax(V[:, -1])
+    path = list(russelhmm.build_viterbi_path(prev, last_state))[::-1]
+    print(path)
+
     posterior_marginals = russelhmm.forward_backward(obs)
     hlp.print_h2("expected leakage of the end state")
     future_dist = hlp.state_probability_after_n_steps(
@@ -767,25 +749,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     hlp.print_table(trans_p)
     print('emissions distribution')
     hlp.print_table(emit_p)
-    hlp.print_h2(
-        'compute most likely sequence of hidden states to the end state')
-    print('states')
-    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
-    print(D)
-    print('probability')
-    print(dk.path_prob(D, trans_p))
-    hlp.print_h2('compute most likely sequence of actions to the end state')
-    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
-    state_index_list, A = eppstein.extract_data("russelworld.txt", p)
-    print('result')
-    print(A[0])
-    obs = A[0][0]
-    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
-    print(actions)
-    # obs needs positive indices for viterbi alg implementation below
-    # obs_original = obs
-    obs = [obs[i] + 1 for i in range(len(obs))]
-    print(obs)
+
     hlp.print_h2('prior marginals')
     n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
@@ -802,6 +766,26 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+
+    hlp.print_h2('compute most likely sequence of actions to the end state')
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    state_index_list, A = eppstein.extract_data("russelworld.txt", p)
+    print('result')
+    print(A[0])
+    obs = A[0][0]
+    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+    print(actions)
+    # obs needs positive indices for viterbi alg implementation below
+    # obs_original = obs
+    obs = [obs[i] + 1 for i in range(len(obs))]
+    print(obs)
+
+    hlp.print_h2('compute most likely sequence of hidden states to the end state')
+    V, prev = russelhmm.viterbi(obs)
+    last_state = np.argmax(V[:, -1])
+    path = list(russelhmm.build_viterbi_path(prev, last_state))[::-1]
+    print(path)
+
     posterior_marginals = russelhmm.forward_backward(obs)
     print('forward backward result:')
     hlp.print_table(posterior_marginals)
@@ -878,19 +862,25 @@ def run_russel_norvig_world_old(obs=[]):
     start_state = 8
     states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(
         T, p, 12, 4, start_state)
-    print("============================ Dijkstra ===========================")
+    # print("============================ Dijkstra ===========================")
     # print(trans_p)
-
     # g = trans_to_graph(trans_p)
     # D = dijkstra(g,"v4","v7")
     # end_state = 3
     # D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
     # print(D)
     # print(dk.path_prob(D, trans_p))
-
-    print("=========================== KDijkstra ===========================")
-
+    # print("=========================== KDijkstra ===========================")
+    # Viterbi Path
+    # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
+    # print('states')
+    # D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
+    # print(D)
+    # print('probability')
+    # print(dk.path_prob(D, trans_p))
     # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
+    
+    print("============================ Eppstein ============================")
     epp_states, epp_actions = eppstein.extract_data("russelworld.txt", p)
     print(epp_actions)
     A = epp_actions
@@ -1098,7 +1088,7 @@ def run_river_world_old(obs=[]):
     start_state = 4
     states, start_p, trans_p, emit_p = hlp.to_hidden_markov_model(
         T, p, 12, 2, start_state)
-    print("============================Dijkstra===========================")
+    # print("============================Dijkstra===========================")
     # print(trans_p)
 
     # g = trans_to_graph(trans_p)
@@ -1107,7 +1097,7 @@ def run_river_world_old(obs=[]):
     # print(D)
     # print(dk.path_prob(D, trans_p))
 
-    print("===========================KDijkstra===========================")
+    # print("===========================KDijkstra===========================")
 
     # A = dk.kdijkstra_actions(trans_p, start_state, 7, 10, p, 2)
 
