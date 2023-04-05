@@ -213,18 +213,18 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     #    result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
     # print(len(result))
 
-    file_name = 'run_russel_norvig_world_all_policies2.csv'
+    file_name = 'out/run_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
         df = pd.read_csv(file_name)
     else:
         print(f"The file '{file_name}' does not exist.")
-        state_utilities = []  # utility]
-        start_state_utilities = []  # utility[8]]
-        lower_bounds = []  # lower_bound]
-        upper_bounds = []  # upper_bound]
-        # for r in result:
+        length = int(np.minimum(len(policies), num_policies))
+        state_utilities = np.empty((length, len(states)))
+        start_state_utilities = np.empty(length)
+        lower_bounds = np.empty(length)
+        upper_bounds = np.empty(length)
         #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
         #    lowers.append(r[2])
         #    uppers.append(r[1])
@@ -233,22 +233,20 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
         # for i in range(3):
             # p = list(random.choice(policies)) #Has possibility of repeating policies
             # p = policies[i]'
-        length = int(np.minimum(len(policies), num_policies))
-        print(length)
         for i in range(length):
             p = policies[i]
-            # result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
-            result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
-            state_utilities.append(result[0])
-            start_state_utilities.append(result[0][8])
-            lower_bounds.append(result[2])
-            upper_bounds.append(result[1])
+            result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            # result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
+            state_utilities[i,:] = result[0]
+            start_state_utilities[i] = result[0][8]
+            lower_bounds[i] = result[2]
+            upper_bounds[i] = result[1]
         combined_list = [[policy, utility, lower, upper] for policy, utility, lower, upper in zip(
             policies, state_utilities, lower_bounds, upper_bounds)]
         df = pd.DataFrame(combined_list, columns=[
                           'Policy', 'Utility', 'Lower Bound', 'Upper Bound'])
         df['Utility'] = df['Utility'].apply(lambda x: str(list(x)))
-        df.to_csv(file_name, index=False)
+        # df.to_csv(file_name, index=False)
     # extract the required lists
     # policy_list = df['Policy'].tolist()
     df['Utility'] = df['Utility'].apply(ast.literal_eval)
@@ -531,34 +529,34 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     least_likely_future_state = np.where(
         future_dist == np.min(future_dist[np.nonzero(future_dist)]))
     # print(least_likely_future_state[0][0])
+    length = len(A)
     # print(future_dist[least_likely_future_state])
-    probabilities = []
-    divergences = []
-    for a in A:
+    probabilities = np.zeros(length)
+    divergences = np.zeros(length)
+    for i, a in enumerate(A):
         obs = a[0]
-        probability = a[1]
-        probabilities.append(probability)
+        probabilities[i] = a[1]
         # obs = [obs[i] + 1 for i in range(len(obs))]
-        russelhmm = hmm.HMM(np.array(trans_p), np.array(
-            emit_p), np.array(start_p))
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
         p = posterior_marginals[1:]
         q = n_trans_p_history[:len(obs)]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
-        divergences.append(sum(divergence[-1]))
+        divergences[i] = sum(divergence[-1])
     # print("probabilities accounted for")
     # print(probabilities)
     # print(sum(probabilities))
     # print(len(divergences))
     # print(divergences)
-    expected_leakage = [divergences[i] * probabilities[i]
-                        for i in range(len(probabilities))]
-    most_surprising_dist = [0] * len(states)
+    expected_leakage = divergences * probabilities
+
+    most_surprising_dist = np.zeros(len(states))
     most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+
     # print('most surprising state distribution')
     # print(most_surprising_dist)
-    p = [most_surprising_dist]
-    q = [future_dist.tolist()]
+    p = np.array([most_surprising_dist])
+    q = np.array([future_dist])
     _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
     remaining_probability = 1 - sum(probabilities)
     expected_kl_divergence = sum(most_surprising_divergence[-1])
@@ -1223,7 +1221,7 @@ def main():
         start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world_all_policies(1000, 1)
+            run_russel_norvig_world_all_policies(10000, 1)
             # run_russel_norvig_world_sample_policies(10)
             break
         elif selection == '2':

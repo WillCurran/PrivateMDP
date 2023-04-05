@@ -138,6 +138,22 @@ def state_probability_after_n_steps(T, start_state, n):
     final_dist = np.dot(start_state, P_n)
     return final_dist
 
+# def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
+#     """Calculates the state probability after steps from 1 to n.
+#     power is n or the number to raise the markov chain for to calculate 
+#     the n step transition matrix probability distribution.
+#
+#     """
+#     state = [start_p]
+#     state_history = [state[0]]
+#     for x in range(power):
+#         next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
+#                        for markov_chain_col in zip(*markov_chain)]
+#                       for state_row in state]
+#         state_history.append(next_state[0])
+#         state = next_state
+#     return (state, state_history)
+
 
 def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
     """Calculates the state probability after steps from 1 to n.
@@ -145,13 +161,12 @@ def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
     the n step transition matrix probability distribution.
 
     """
-    state = [start_p]
-    state_history = [state[0]]
+    state = np.array([start_p])
+    state_history = np.empty((power + 1, len(start_p)))
+    state_history[0] = start_p
     for x in range(power):
-        next_state = [[sum(a * b for a, b in zip(state_row, markov_chain_col))
-                       for markov_chain_col in zip(*markov_chain)]
-                      for state_row in state]
-        state_history.append(next_state[0])
+        next_state = np.dot(state, markov_chain)
+        state_history[x + 1] = next_state
         state = next_state
     return (state, state_history)
 
@@ -180,28 +195,42 @@ def to_hidden_markov_model(transition_matrix, policy, number_of_states, number_o
             emit_p[i][int(policy[i]) + 1] = 1.0
     return (states, start_p, trans_p, emit_p)
 
+# def kl_divergence_for_each_state(p, q):
+#     rows = len(p)
+#     cols = len(p[0])
+#     _p = [[0] * cols for i in range(rows)]
+#     _q = [[0] * cols for i in range(rows)]
+#     result = [[0] * cols for i in range(rows)]
+#     for i in range(rows):
+#         for j in range(cols):
+#             p_i_j = p[i][j]
+#             q_i_j = q[i][j]
+#
+#             if p_i_j > 1.0:
+#                 p_i_j = 1.0
+#
+#             if q_i_j > 1.0:
+#                 q_i_j = 1.0
+#
+#             # compute Bernoulli distribution
+#             _p[i][j] = [p_i_j, 1.0 - p_i_j]
+#             _q[i][j] = [q_i_j, 1.0 - q_i_j]
+#             result[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
+#     return (_p, _q, result)
+
 
 def kl_divergence_for_each_state(p, q):
-    rows = len(p)
-    cols = len(p[0])
-    _p = [[0] * cols for i in range(rows)]
-    _q = [[0] * cols for i in range(rows)]
-    result = [[0] * cols for i in range(rows)]
-    for i in range(rows):
-        for j in range(cols):
-            p_i_j = p[i][j]
-            q_i_j = q[i][j]
+    p = np.clip(p, a_min=0.0, a_max=1.0)  # clip values above 1.0
+    q = np.clip(q, a_min=0.0, a_max=1.0)  # clip values above 1.0
 
-            if p_i_j > 1.0:
-                p_i_j = 1.0
+    # compute Bernoulli distribution
+    _p = np.stack((p, 1 - p), axis=-1)
+    _q = np.stack((q, 1 - q), axis=-1)
 
-            if q_i_j > 1.0:
-                q_i_j = 1.0
+    # calculate KL divergence for each state
+    # result = np.sum(_p * np.log(_p / _q), axis=-1)
+    result = np.sum(kl_div(_p, _q), axis=-1)
 
-            # compute Bernoulli distribution
-            _p[i][j] = [p_i_j, 1.0 - p_i_j]
-            _q[i][j] = [q_i_j, 1.0 - q_i_j]
-            result[i][j] = sum(kl_div(_p[i][j], _q[i][j]))
     return (_p, _q, result)
 
 
