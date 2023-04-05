@@ -8,6 +8,7 @@ import time
 from scipy.special import rel_entr, kl_div
 from scipy.stats import entropy
 from tabulate import tabulate
+import jpype
 
 from helpers import print_table
 import Forward_Backward_Algiorithm_wikipedia as fb
@@ -193,12 +194,11 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     print("Optimal Policy:")
     russel_norvig_world.print_policy(p, (3, 4))
     print(p)
-    utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
-        T, p, r, gamma, num_samples)
-    print('*')
-    hlp.print_world(utility)
-    print(upper_bound)
-    print(lower_bound)
+    # utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+    # print('*')
+    # hlp.print_world(utility)
+    # print(upper_bound)
+    # print(lower_bound)
 
     hlp.print_h2('enumerate all policies')
     start_state = 8
@@ -213,17 +213,17 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     #    result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
     # print(len(result))
 
-    file_name = 'run_russel_norvig_world_all_policies.csv'
+    file_name = 'run_russel_norvig_world_all_policies2.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
         df = pd.read_csv(file_name)
     else:
         print(f"The file '{file_name}' does not exist.")
-        state_utilities = [utility]
-        start_state_utilities = [utility[8]]
-        lower_bounds = [lower_bound]
-        upper_bounds = [upper_bound]
+        state_utilities = []  # utility]
+        start_state_utilities = []  # utility[8]]
+        lower_bounds = []  # lower_bound]
+        upper_bounds = []  # upper_bound]
         # for r in result:
         #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
         #    lowers.append(r[2])
@@ -234,10 +234,11 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
             # p = list(random.choice(policies)) #Has possibility of repeating policies
             # p = policies[i]'
         length = int(np.minimum(len(policies), num_policies))
+        print(length)
         for i in range(length):
             p = policies[i]
-            result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
-                T, p, r, gamma, num_samples)
+            # result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
             state_utilities.append(result[0])
             start_state_utilities.append(result[0][8])
             lower_bounds.append(result[2])
@@ -256,8 +257,7 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     lower_bounds_list = df['Lower Bound'].tolist()
     upper_bounds_list = df['Upper Bound'].tolist()
     # pareto.plot_bounds(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
-    pareto.pareto_front(start_state_utilities_list,
-                        lower_bounds_list, upper_bounds_list, "Pareto")
+    # pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
     # pareto.pareto_front_separate(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Lower Bound Pareto Front", "Upper Bound Pareto")
 
 
@@ -327,7 +327,7 @@ def run_river_world():
     # Define an MDP
 
 
-def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
+def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -371,18 +371,7 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
     # print('emissions distribution')
     # hlp.print_table(emit_p)
     # hlp.print_h2('compute most likely sequence of hidden states to the end state')
-    # print('states')
-    D = (dk.dijkstra(trans_p, start_state, end_state, None, 3))
-    # print(D)
-    # print('probability')
-    # print(dk.path_prob(D, trans_p))
-    # hlp.print_h2('compute most likely sequence of actions to the end state')
-    A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
-    # state_index_list, A = eppstein.extract_data("russelworld.txt", p)
-    # print('Total number of action sequences')
-    # print(len(A))
-    # print('result')
-    # print(A[0])
+    A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
     obs = A[0][2]
     actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
     # print(actions)
@@ -420,8 +409,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma):
     probabilities = []
     divergences = []
     for a in A:
-        obs = a[0]
-        probability = a[1]
+        obs = a[2]
+        probability = a[0]
         probabilities.append(probability)
         obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
@@ -1219,6 +1208,7 @@ def run_river_world_old(obs=[]):
 
 
 def main():
+    jpype.startJVM()
     hlp.print_h1('markov decision process policy leakage calculation program')
     while True:
         print('please select an option:')
@@ -1233,7 +1223,7 @@ def main():
         start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world_all_policies(10000)
+            run_russel_norvig_world_all_policies(1000, 1)
             # run_russel_norvig_world_sample_policies(10)
             break
         elif selection == '2':
@@ -1265,6 +1255,7 @@ def main():
     end_time = time.time()
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds")
+    jpype.shutdownJVM()
 
 
 if __name__ == "__main__":

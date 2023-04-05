@@ -68,7 +68,6 @@ def trans_to_graph(trans_p, path):
 
 def eppstein(trans_p, p, start_state, end_state, k):
     result = []
-    jpype.startJVM()
 
     # if not continue
     d = dk.dijkstra2(trans_p, start_state, 3)
@@ -89,11 +88,12 @@ def eppstein(trans_p, p, start_state, end_state, k):
     MyClass.main(args)
     output_string = str(output_stream.toString())
     result = eppstein_output_to_list(p, output_string)
-    jpype.shutdownJVM()
+
     return result
 
 
 def main():
+    jpype.startJVM()
     print('running eppstein on optimal policy')
     T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
     start_state = 8
@@ -108,6 +108,7 @@ def main():
     result = eppstein(trans_p, p, start_state, end_state, k)
     print(result[0])
     print(f"Execution time: {execution_time} seconds")
+    jpype.shutdownJVM()
 
 
 if __name__ == "__main__":
