@@ -61,43 +61,71 @@ class HMM:
 
         return X
 
+    """ 
+        Modified 
+        Here, we are checking if the denominator sum_F is equal to zero before dividing. 
+        If it is zero, we set the corresponding row in F to be a uniform distribution.
+    """
+
     def forward(self, obs_seq):
         N = self.A.shape[0]
         T = len(obs_seq)
-
+    
         F = np.zeros((T, N))
-
+    
         F[0,:] = self.pi * self.B[:, obs_seq[0]]
         F[0] = F[0] / F[0].sum()
-
+    
         for t in range(1, T):
             for n in range(N):
                 F[t, n] = np.dot(F[t - 1,:], (self.A[:, n])) * self.B[n, obs_seq[t]]
             # Normalize
-            F[t] = F[t] / F[t].sum()
-
+            sum_F = F[t].sum()
+            if sum_F == 0:
+                F[t] = np.ones((N,)) / N
+            else:
+                F[t] = F[t] / sum_F
+    
         first = np.array([self.pi])
-
+    
         return np.concatenate([first, F])
+
+    """
+        Modified  
+        Here, we are checking if the denominator sum_X is equal to zero before dividing. 
+        If it is zero, we set the corresponding row in X to be a uniform distribution.
+    """
 
     def backward(self, obs_seq):
         N = self.A.shape[0]
         T = len(obs_seq)
-
+    
         X = np.zeros((T, N))
         X[-1:,:] = 1
-
+    
         for t in reversed(range(T - 1)):
             for n in range(N):
                 X[t, n] = np.sum(X[t + 1,:] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
             # Normalize
-            X[t] = X[t] / X[t].sum()
+            sum_X = X[t].sum()
+            if sum_X == 0:
+                X[t] = np.ones((N,)) / N
+            else:
+                X[t] = X[t] / sum_X
         first = np.zeros((1, N))
-
+    
         for n in range(N):
             first[0][n] = np.sum(X[0,:] * self.A[n,:] * self.B[:, obs_seq[0]])
         first = first / first.sum()
         return np.concatenate([first, X])
+
+    """
+        This code first computes the product of the forward and backward probabilities, 
+        and then computes their sum along the time axis.
+        If the sum is nonzero, the posteriors are computed as 
+        the product of the forward and backward probabilities, normalized by their sum. 
+        If the sum is zero, the posteriors are set to be uniform.
+    """
 
     def forward_backward(self, obs_seq):
         # Compute the forward probabilities
@@ -105,7 +133,12 @@ class HMM:
         # Compute the backward probabilities
         backward = self.backward(obs_seq)
         # Compute the posterior marginals
-        posteriors = forward * backward / np.sum(forward * backward, axis=1, keepdims=True)
+        posteriors_sum = np.sum(forward * backward, axis=1, keepdims=True)
+        # Replace zeros with ones to avoid division by zero
+        posteriors_sum[posteriors_sum == 0] = 1
+        # Use a uniform distribution as a substitute for zero
+        uniform_dist = np.full_like(forward, 1 / forward.shape[1])
+        posteriors = np.where(posteriors_sum == 0, uniform_dist, forward * backward / posteriors_sum)
         return posteriors
     
     def observation_prob(self, obs_seq):

@@ -225,9 +225,9 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
         start_state_utilities = np.empty(length)
         lower_bounds = np.empty(length)
         upper_bounds = np.empty(length)
-        #    average_utility.append(np.sum(r[0]) / (len(r) - 1))
-        #    lowers.append(r[2])
-        #    uppers.append(r[1])
+        # average_utility.append(np.sum(r[0]) / (len(r) - 1))
+        # lowers.append(r[2])
+        # uppers.append(r[1])
         if(np.isinf(num_policies)):
             random.shuffle(policies)
         # for i in range(3):
@@ -235,8 +235,8 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
             # p = policies[i]'
         for i in range(length):
             p = policies[i]
-            result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
-            # result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
+            # result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
             state_utilities[i,:] = result[0]
             start_state_utilities[i] = result[0][8]
             lower_bounds[i] = result[2]
@@ -369,68 +369,65 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print('emissions distribution')
     # hlp.print_table(emit_p)
     # hlp.print_h2('compute most likely sequence of hidden states to the end state')
-    A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
-    obs = A[0][2]
-    actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
-    # print(actions)
-    # obs needs positive indices for viterbi alg implementation below
-    # obs_original = obs
-    obs = [obs[i] + 1 for i in range(len(obs))]
-    # print(obs)
-    # hlp.print_h2('prior marginals')
-    n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
+    # print('states')
+    future_dist, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
-    n_trans_p = np.array(n_trans_p)
+    # future_dist = np.array(future_dist)
     # print("state probability after 100 steps")
-    # hlp.print_world(n_trans_p)
+    # hlp.print_world(future_dist)
     # print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
-    # print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
-    posterior_marginals = russelhmm.forward_backward(obs)
+
+    A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
+    # print(A)
+
+    # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
-    future_dist = hlp.state_probability_after_n_steps(
-        markov_chain, start_p, 100)
+    # future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
+
     # print("state probability after 100 steps")
     # hlp.print_world(future_dist)
     # print("minimum non-zero state probability")
-    least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))
-    # print(least_likely_future_state[0][0])
+    # least_likely_future_state = np.where(future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    # print(least_likely_future_state)
+    length = len(A)
     # print(future_dist[least_likely_future_state])
-    probabilities = []
-    divergences = []
-    for a in A:
+    probabilities = np.zeros(length)
+    divergences = np.zeros(length)
+    for i, a in enumerate(A):
         obs = a[2]
-        probability = a[0]
-        probabilities.append(probability)
+        probabilities[i] = a[0]
         obs = [obs[i] + 1 for i in range(len(obs))]
-        russelhmm = hmm.HMM(np.array(trans_p), np.array(
-            emit_p), np.array(start_p))
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
-        p = posterior_marginals[1:]
-        q = n_trans_p_history[:len(obs)]
+        # p = posterior_marginals[1:]
+        # q = n_trans_p_history[:len(obs)]
+        p = [posterior_marginals[-1]]
+        q = [n_trans_p_history[len(obs) - 1]]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
-        divergences.append(sum(divergence[-1]))
+        divergences[i] = sum(divergence[-1])
     # print("probabilities accounted for")
     # print(probabilities)
     # print(sum(probabilities))
     # print(len(divergences))
     # print(divergences)
-    expected_leakage = [divergences[i] * probabilities[i]
-                        for i in range(len(probabilities))]
-    most_surprising_dist = [0] * len(states)
-    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    expected_leakage = divergences * probabilities
+
+    most_surprising_dist = np.zeros(len(states))
+    most_surprising_dist[least_likely_future_state] = 1.0
+
     # print('most surprising state distribution')
     # print(most_surprising_dist)
-    p = [most_surprising_dist]
-    q = [future_dist.tolist()]
+    p = np.array([most_surprising_dist])
+    q = np.array([future_dist])
     _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
     remaining_probability = 1 - sum(probabilities)
     expected_kl_divergence = sum(most_surprising_divergence[-1])
@@ -489,15 +486,15 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # hlp.print_table(emit_p)
     # hlp.print_h2('compute most likely sequence of hidden states to the end state')
     # print('states')
-    n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
+    future_dist, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
-    n_trans_p = np.array(n_trans_p)
+    # future_dist = np.array(future_dist)
     # print("state probability after 100 steps")
-    # hlp.print_world(n_trans_p)
+    # hlp.print_world(future_dist)
     # print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
-    # print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
@@ -521,14 +518,12 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
 
     # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
-    future_dist = hlp.state_probability_after_n_steps(
-        markov_chain, start_p, 100)
+    # future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
     # print("state probability after 100 steps")
     # hlp.print_world(future_dist)
     # print("minimum non-zero state probability")
-    least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))
-    # print(least_likely_future_state[0][0])
+    # least_likely_future_state = np.where(future_dist == np.min(future_dist[np.nonzero(future_dist)]))
+    # print(least_likely_future_state)
     length = len(A)
     # print(future_dist[least_likely_future_state])
     probabilities = np.zeros(length)
@@ -539,8 +534,10 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         # obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
-        p = posterior_marginals[1:]
-        q = n_trans_p_history[:len(obs)]
+        # p = posterior_marginals[1:]
+        # q = n_trans_p_history[:len(obs)]
+        p = [posterior_marginals[-1]]
+        q = [n_trans_p_history[len(obs) - 1]]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences[i] = sum(divergence[-1])
     # print("probabilities accounted for")
@@ -551,7 +548,7 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     expected_leakage = divergences * probabilities
 
     most_surprising_dist = np.zeros(len(states))
-    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    most_surprising_dist[least_likely_future_state] = 1.0
 
     # print('most surprising state distribution')
     # print(most_surprising_dist)
@@ -611,15 +608,15 @@ def run_russel_norvig_world_optimal_policy_only():
     hlp.print_table(emit_p)
 
     hlp.print_h2('prior marginals')
-    n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
+    future_dist, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
-    n_trans_p = np.array(n_trans_p)
+    future_dist = np.array(future_dist)
     print("state probability after 100 steps")
-    hlp.print_world(n_trans_p)
+    hlp.print_world(future_dist)
     print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
-    print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    print(least_likely_future_state)
 
     hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
@@ -649,14 +646,13 @@ def run_russel_norvig_world_optimal_policy_only():
 
     posterior_marginals = russelhmm.forward_backward(obs)
     hlp.print_h2("expected leakage of the end state")
-    future_dist = hlp.state_probability_after_n_steps(
-        markov_chain, start_p, 100)
+    # future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
     print("state probability after 100 steps")
     hlp.print_world(future_dist)
     print("minimum non-zero state probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))
-    print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    print(least_likely_future_state)
     print(future_dist[least_likely_future_state])
     probabilities = []
     divergences = []
@@ -679,8 +675,8 @@ def run_russel_norvig_world_optimal_policy_only():
     # print(divergences)
     expected_leakage = [divergences[i] * probabilities[i]
                         for i in range(len(probabilities))]
-    most_surprising_dist = [0] * len(states)
-    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    most_surprising_dist = np.zeros(len(states))
+    most_surprising_dist[least_likely_future_state] = 1.0
     print('most surprising state distribution')
     print(most_surprising_dist)
     p = [most_surprising_dist]
@@ -738,15 +734,15 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     hlp.print_table(emit_p)
 
     hlp.print_h2('prior marginals')
-    n_trans_p, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
+    future_dist, n_trans_p_history = hlp.state_probabilities_up_to_n_steps(
         markov_chain, start_p, 100)
-    n_trans_p = np.array(n_trans_p)
+    future_dist = np.array(future_dist)
     print("state probability after 100 steps")
-    hlp.print_world(n_trans_p)
+    hlp.print_world(future_dist)
     print("minimum non-zero state probability")
     least_likely_future_state = np.where(
-        n_trans_p == np.min(n_trans_p[np.nonzero(n_trans_p)]))
-    print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    print(least_likely_future_state)
     hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
     trans_p[5][5] = 1.0
@@ -779,6 +775,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     hlp.print_h2('difference between prior and posterior marginals')
     p = posterior_marginals[1:]
     q = n_trans_p_history[:len(obs)]
+    
     rows = len(p)
     cols = len(p[0])
     for i in range(rows):
@@ -792,9 +789,9 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     print('q')
     hlp.print_table(q)
     print('_p')
-    hlp.print_table(_p)
+    hlp.print_table(_p.tolist())
     print('_q')
-    hlp.print_table(_q)
+    hlp.print_table(_q.tolist())
     print('divergence')
     hlp.print_table(divergence)
 
@@ -988,15 +985,15 @@ def run_russel_norvig_world_old(obs=[]):
     _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
 
     print('p')
-    print(pd.DataFrame(p).to_string())
+    hlp.print_table(p)
     print('q')
-    print(pd.DataFrame(q).to_string())
+    hlp.print_table(q)
     print('_p')
-    print(pd.DataFrame(_p).to_string())
+    hlp.print_table(_p.tolist())
     print('_q')
-    print(pd.DataFrame(_q).to_string())
+    hlp.print_table(_q.tolist())
     print('divergence')
-    print(pd.DataFrame(divergence).to_string())
+    hlp.print_table(divergence)
 
     print("================ Expected Leakage of the end state ================")
     future_dist = hlp.state_probability_after_n_steps(
@@ -1005,8 +1002,8 @@ def run_russel_norvig_world_old(obs=[]):
     hlp.print_world(future_dist)
     print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))
-    print(least_likely_future_state[0][0])
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+    print(least_likely_future_state)
     print(future_dist[least_likely_future_state])
     probabilities = []
     divergences = []
@@ -1028,8 +1025,8 @@ def run_russel_norvig_world_old(obs=[]):
     print(divergences)
     expected_leakage = [divergences[i] * probabilities[i]
                         for i in range(len(probabilities))]
-    most_surprising_dist = [0] * len(states)
-    most_surprising_dist[least_likely_future_state[0][0]] = 1.0
+    most_surprising_dist = np.zeros(len(states))
+    most_surprising_dist[least_likely_future_state] = 1.0
     print(most_surprising_dist)
     p = [most_surprising_dist]
     q = [future_dist.tolist()]
@@ -1198,11 +1195,18 @@ def run_river_world_old(obs=[]):
         print(kl_div(p[i], q[i]))
         print(sum(kl_div(p[i], q[i])))
     print("==================== KL Divergence for each state ===================")
-    _p, _q, expected_excess_surprise = hlp.kl_divergence_for_each_state(p, q)
+    _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
 
-    hlp.print_table(_p)
-    hlp.print_table(_q)
-    hlp.print_table(expected_excess_surprise)
+    print('p')
+    hlp.print_table(p)
+    print('q')
+    hlp.print_table(q)
+    print('_p')
+    hlp.print_table(_p.tolist())
+    print('_q')
+    hlp.print_table(_q.tolist())
+    print('divergence')
+    hlp.print_table(divergence)
 
 
 def main():

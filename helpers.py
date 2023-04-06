@@ -161,7 +161,7 @@ def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
     the n step transition matrix probability distribution.
 
     """
-    state = np.array([start_p])
+    state = np.array(start_p)
     state_history = np.empty((power + 1, len(start_p)))
     state_history[0] = start_p
     for x in range(power):
