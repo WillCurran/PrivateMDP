@@ -83,7 +83,7 @@ def take_action(curr_state, action, T):
     coin = random.random()
     # coin = 0.5
     # 12 possible next states
-    next_states = T[curr_state,:, int(action)]
+    next_states = T[curr_state, :, int(action)]
     prob_counter = 0.0
     # randomly take next action based on weights
     for state, prob in enumerate(next_states):
@@ -121,7 +121,8 @@ def n_step_transition_matrix(T, n):
     result = []
     # Compute matrix exponentiations
     for i in range(n):
-        P_i = np.linalg.matrix_power(T, i + 1)  # i+1 since the range starts from 0
+        # i+1 since the range starts from 0
+        P_i = np.linalg.matrix_power(T, i + 1)
         result.append(P_i)
     return result
 
@@ -140,7 +141,7 @@ def state_probability_after_n_steps(T, start_state, n):
 
 # def state_probabilities_up_to_n_steps(markov_chain, start_p, power):
 #     """Calculates the state probability after steps from 1 to n.
-#     power is n or the number to raise the markov chain for to calculate 
+#     power is n or the number to raise the markov chain for to calculate
 #     the n step transition matrix probability distribution.
 #
 #     """
@@ -179,20 +180,31 @@ def to_hidden_markov_model(transition_matrix, policy, number_of_states, number_o
     # Viterbi needs 12x12 transition matrix
     # Generate the one induced by the policy
 
-    trans_p = []
+    # trans_p = []
+    # for i in range(number_of_states):
+    #     trans_p.append([0.0 for j in range(number_of_states)])
+    #     if not np.isnan(policy[i]) and not policy[i] == -1:
+    #         for j in range(number_of_states):
+    #             trans_p[i][j] = transition_matrix[i, j, int(policy[i])]
+    # # emmission probabilities are induced by the policy
+    # emit_p = []
+    # for i in range(number_of_states):
+    #     emit_p.append([0.0 for j in range(number_of_observable_actions + 1)])
+    #     # TODO - make nondeterministic policy possible
+    #     if not np.isnan(policy[i]):
+    #         # Increment observable actions by 1, index 0 means termination
+    #         emit_p[i][int(policy[i]) + 1] = 1.00
+    trans_p = np.zeros((number_of_states, number_of_states))
     for i in range(number_of_states):
-        trans_p.append([0.0 for j in range(number_of_states)])
         if not np.isnan(policy[i]) and not policy[i] == -1:
             for j in range(number_of_states):
-                trans_p[i][j] = transition_matrix[i, j, int(policy[i])]
-    # emmission probabilities are induced by the policy
-    emit_p = []
+                trans_p[i, j] = transition_matrix[i, j, int(policy[i])]
+
+    emit_p = np.zeros((number_of_states, number_of_observable_actions + 1))
     for i in range(number_of_states):
-        emit_p.append([0.0 for j in range(number_of_observable_actions + 1)])
-        # TODO - make nondeterministic policy possible
         if not np.isnan(policy[i]):
-            # Increment observable actions by 1, index 0 means termination
-            emit_p[i][int(policy[i]) + 1] = 1.0
+            emit_p[i, int(policy[i]) + 1] = 1.0
+
     return (states, start_p, trans_p, emit_p)
 
 # def kl_divergence_for_each_state(p, q):
@@ -242,7 +254,8 @@ def stationary_distribution(P):
     index = np.where(np.isclose(eigenvalues, 1))[0][0]
 
     # Normalize the eigenvector to obtain the stationary distribution
-    stationary_dist = np.real(eigenvectors[:, index] / eigenvectors[:, index].sum())
+    stationary_dist = np.real(
+        eigenvectors[:, index] / eigenvectors[:, index].sum())
     return stationary_dist
 
 
@@ -259,7 +272,8 @@ def equilibrium_distribution(transition_matrix, max_iter=100, tol=1e-8):
     for i in range(max_iter):
         prev_distribution = distribution
         # Calculate new distribution
-        distribution = np.sum(transition_matrix[:,:, i] @ distribution, axis=1)
+        distribution = np.sum(
+            transition_matrix[:, :, i] @ distribution, axis=1)
         # Check for convergence
         if np.linalg.norm(distribution - prev_distribution) < tol:
             break
@@ -355,7 +369,8 @@ def enumerate_policies(states, actions, obstacles, terminals):
     # Enumerate the policies of the MDP
     policies = enumerate_policies(mdp)
     """
-    number_of_policies = len(actions) ** (len(states) - len(obstacles) - len(terminals))
+    number_of_policies = len(actions) ** (len(states) -
+                                          len(obstacles) - len(terminals))
     # Create the 2-d array of possible selections
     selections = [actions for i in range(len(states))]
     for obstacle in obstacles:

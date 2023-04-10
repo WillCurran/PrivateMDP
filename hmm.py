@@ -1,6 +1,5 @@
 # https://github.com/aehuynh/hidden-markov-model
 
-import pybeam
 
 import numpy as np
 import pandas as pd
@@ -44,7 +43,8 @@ class HMM:
 
         for t in range(1, T):
             for n in range(N):
-                F[n, t] = np.dot(F[:, t - 1], (self.A[:, n])) * self.B[n, obs_seq[t]]
+                F[n, t] = np.dot(F[:, t - 1], (self.A[:, n])
+                                 ) * self.B[n, obs_seq[t]]
 
         return F
 
@@ -57,7 +57,8 @@ class HMM:
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[n, t] = np.sum(X[:, t + 1] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
+                X[n, t] = np.sum(X[:, t + 1] * self.A[n, :]
+                                 * self.B[:, obs_seq[t + 1]])
 
         return X
 
@@ -70,24 +71,25 @@ class HMM:
     def forward(self, obs_seq):
         N = self.A.shape[0]
         T = len(obs_seq)
-    
+
         F = np.zeros((T, N))
-    
-        F[0,:] = self.pi * self.B[:, obs_seq[0]]
+
+        F[0, :] = self.pi * self.B[:, obs_seq[0]]
         F[0] = F[0] / F[0].sum()
-    
+
         for t in range(1, T):
             for n in range(N):
-                F[t, n] = np.dot(F[t - 1,:], (self.A[:, n])) * self.B[n, obs_seq[t]]
+                F[t, n] = np.dot(F[t - 1, :], (self.A[:, n])
+                                 ) * self.B[n, obs_seq[t]]
             # Normalize
             sum_F = F[t].sum()
             if sum_F == 0:
                 F[t] = np.ones((N,)) / N
             else:
                 F[t] = F[t] / sum_F
-    
+
         first = np.array([self.pi])
-    
+
         return np.concatenate([first, F])
 
     """
@@ -99,13 +101,14 @@ class HMM:
     def backward(self, obs_seq):
         N = self.A.shape[0]
         T = len(obs_seq)
-    
+
         X = np.zeros((T, N))
-        X[-1:,:] = 1
-    
+        X[-1:, :] = 1
+
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[t, n] = np.sum(X[t + 1,:] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
+                X[t, n] = np.sum(X[t + 1, :] * self.A[n, :]
+                                 * self.B[:, obs_seq[t + 1]])
             # Normalize
             sum_X = X[t].sum()
             if sum_X == 0:
@@ -113,9 +116,10 @@ class HMM:
             else:
                 X[t] = X[t] / sum_X
         first = np.zeros((1, N))
-    
+
         for n in range(N):
-            first[0][n] = np.sum(X[0,:] * self.A[n,:] * self.B[:, obs_seq[0]])
+            first[0][n] = np.sum(X[0, :] * self.A[n, :]
+                                 * self.B[:, obs_seq[0]])
         first = first / first.sum()
         return np.concatenate([first, X])
 
@@ -138,9 +142,10 @@ class HMM:
         posteriors_sum[posteriors_sum == 0] = 1
         # Use a uniform distribution as a substitute for zero
         uniform_dist = np.full_like(forward, 1 / forward.shape[1])
-        posteriors = np.where(posteriors_sum == 0, uniform_dist, forward * backward / posteriors_sum)
+        posteriors = np.where(posteriors_sum == 0, uniform_dist,
+                              forward * backward / posteriors_sum)
         return posteriors
-    
+
     def observation_prob(self, obs_seq):
         """ P( entire observation sequence | A, B, pi ) """
         return np.sum(self._forward(obs_seq)[:, -1])
@@ -212,12 +217,13 @@ class HMM:
 
         xi = np.zeros((T - 1, N, N))
         for t in range(xi.shape[0]):
-            xi[t,:,:] = self.A * forw[:, [t]] * self.B[:, obs_seq[t + 1]] * back[:, t + 1] / obs_prob
+            xi[t, :, :] = self.A * forw[:, [t]] * \
+                self.B[:, obs_seq[t + 1]] * back[:, t + 1] / obs_prob
 
         gamma = forw * back / obs_prob
 
         # Gamma sum excluding last column
-        gamma_sum_A = np.sum(gamma[:,:-1], axis=1, keepdims=True)
+        gamma_sum_A = np.sum(gamma[:, :-1], axis=1, keepdims=True)
         # Vector of binary values indicating whether a row in gamma_sum is 0.
         # If a gamma_sum row is 0, save old rows on update
         rows_to_keep_A = (gamma_sum_A == 0)
@@ -242,7 +248,8 @@ class HMM:
         N = self.A.shape[0]
         T = len(obs)
         # Initialize the first column of the trellis.
-        trellis = [{state: {'prob': self.pi[state] * self.B[state][obs[0]], 'prev': None} for state in range(N)}]
+        trellis = [{state: {'prob': self.pi[state] * self.B[state]
+                            [obs[0]], 'prev': None} for state in range(N)}]
         if n == 1:
             V, prev = self.viterbi(obs)
             last_state = np.argmax(V[:, -1])
@@ -252,7 +259,8 @@ class HMM:
         for i in range(1, T):
             # Use beam search to limit the number of states considered at each time step.
             beam_width = n if n < N else N
-            candidates = sorted(trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
+            candidates = sorted(
+                trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
 
             # Update the trellis with the most likely states for this observation.
             trellis.append({})
@@ -260,7 +268,8 @@ class HMM:
                 max_prob = float('-inf')
                 max_prev = None
                 for prev_state, prev_state_info in trellis[-2].items():
-                    prob = prev_state_info['prob'] * self.A[prev_state][state] * self.B[state][obs[i]]
+                    prob = prev_state_info['prob'] * \
+                        self.A[prev_state][state] * self.B[state][obs[i]]
                     if prob > max_prob:
                         max_prob = prob
                         max_prev = prev_state
@@ -269,7 +278,8 @@ class HMM:
         # Find the n most likely state sequences by backtracking through the trellis.
         sequences = []
         beam_width = n if n < N else N
-        candidates = sorted(trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
+        candidates = sorted(
+            trellis[-1].items(), key=lambda x: x[1]['prob'], reverse=True)[:beam_width]
         for state, state_info in candidates:
             sequence = [state]
             prev_state = trellis[-1][state]['prev']
@@ -284,7 +294,8 @@ def example():
     umbrella_transition = [[0.7, 0.3], [0.3, 0.7]]
     umbrella_sensor = [[0.9, 0.1], [0.2, 0.8]]
     umbrella_initial = [0.5, 0.5]
-    umbrellaHMM = HMM(np.array(umbrella_transition), np.array(umbrella_sensor), np.array(umbrella_initial))
+    umbrellaHMM = HMM(np.array(umbrella_transition), np.array(
+        umbrella_sensor), np.array(umbrella_initial))
     # {umbrella, umbrella, no umbrella, umbrella, umbrella}
     umbrella_evidence = [0, 0, 1, 0, 0]
     # result = umbrellaHMM.forward(umbrella_evidence)

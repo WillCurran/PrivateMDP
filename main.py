@@ -1,4 +1,5 @@
 import ast
+import itertools
 import math
 import os
 import random
@@ -26,7 +27,7 @@ import policy_iteration2 as river_world
 
 
 def examine_russel_norvig_world(exponent=3):
-    file_name = 'run_russel_norvig_world_all_policies.csv'
+    file_name = 'out/run_russel_norvig_world_all_policies_10000_executions.csv'
     df = pd.read_csv(file_name)
     df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
     print(df['start_state_utility'])
@@ -34,7 +35,7 @@ def examine_russel_norvig_world(exponent=3):
     df_grouped = df.groupby(['start_state_utility'])
     # .to_csv('selected_policies.csv', index=False)
     print(df_grouped['delta'].min())
-    file_name = 'examine_russel_norvig_world_all_policies.csv'
+    file_name = 'out/examine_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
@@ -81,7 +82,7 @@ def examine_russel_norvig_world(exponent=3):
 
 
 def examine_russel_norvig_world_seperated(exponent=3):
-    file_name = 'run_russel_norvig_world_all_policies.csv'
+    file_name = 'out/run_russel_norvig_world_all_policies_10000_executions.csv'
     df = pd.read_csv(file_name)
     df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
     print(df['start_state_utility'])
@@ -89,7 +90,7 @@ def examine_russel_norvig_world_seperated(exponent=3):
     df_grouped = df.groupby(['start_state_utility'])
     # .to_csv('selected_policies.csv', index=False)
     print(df_grouped['delta'].min())
-    file_name = 'examine_russel_norvig_world_all_policies.csv'
+    file_name = 'out/examine_russel_norvig_world_all_policies.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
@@ -143,7 +144,7 @@ def examine_russel_norvig_world_seperated(exponent=3):
                             upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
 
 
-def run_russel_norvig_world(num_samples=1):
+def run_russel_norvig_world_optimal_policy_iteration_history(num_samples=1):
     """Run calculation under russel and norvig world.
 
     """
@@ -235,9 +236,10 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
             # p = policies[i]'
         for i in range(length):
             p = policies[i]
-            # result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
-            result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
-            state_utilities[i,:] = result[0]
+            #result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            result = run_russel_norvig_world_single_policy_only(
+                T, p, r, gamma, num_samples)
+            state_utilities[i, :] = result[0]
             start_state_utilities[i] = result[0][8]
             lower_bounds[i] = result[2]
             upper_bounds[i] = result[1]
@@ -384,10 +386,21 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
+    trans_p[end_state][end_state] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
-    A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
-    # print(A)
+    # A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
+
+    # start_states = [0, 1, 2, 4, 6, 8, 9, 10, 11]
+    start_states = [8]
+    terminal_states = [3, 7]
+
+    A = []
+    for start, terminal in itertools.product(start_states, terminal_states):
+        #print(f"Start state: {start}, Terminal state: {terminal}")
+        A += eppstein.eppstein(trans_p, p, start, terminal, k)
+    print('debug')
+    print(A)
 
     # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
@@ -406,7 +419,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
         obs = a[2]
         probabilities[i] = a[0]
         obs = [obs[i] + 1 for i in range(len(obs))]
-        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(
+            emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
         # p = posterior_marginals[1:]
         # q = n_trans_p_history[:len(obs)]
@@ -500,6 +514,8 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
+    trans_p[end_state][end_state]
+
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
     A = []
@@ -532,7 +548,8 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         obs = a[0]
         probabilities[i] = a[1]
         # obs = [obs[i] + 1 for i in range(len(obs))]
-        russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
+        russelhmm = hmm.HMM(np.array(trans_p), np.array(
+            emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
         # p = posterior_marginals[1:]
         # q = n_trans_p_history[:len(obs)]
@@ -623,6 +640,7 @@ def run_russel_norvig_world_optimal_policy_only():
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
+    trans_p[end_state][end_state]
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
     hlp.print_h2('compute most likely sequence of actions to the end state')
@@ -638,7 +656,8 @@ def run_russel_norvig_world_optimal_policy_only():
     obs = [obs[i] + 1 for i in range(len(obs))]
     print(obs)
 
-    hlp.print_h2('compute most likely sequence of hidden states to the end state')
+    hlp.print_h2(
+        'compute most likely sequence of hidden states to the end state')
     V, prev = russelhmm.viterbi(obs)
     last_state = np.argmax(V[:, -1])
     path = list(russelhmm.build_viterbi_path(prev, last_state))[::-1]
@@ -748,6 +767,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     trans_p[5][5] = 1.0
     # Set Terminal states to loop
     trans_p[7][7] = 1.0
+    trans_p[end_state][end_state]
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
     hlp.print_h2('compute most likely sequence of actions to the end state')
@@ -763,7 +783,8 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     obs = [obs[i] + 1 for i in range(len(obs))]
     print(obs)
 
-    hlp.print_h2('compute most likely sequence of hidden states to the end state')
+    hlp.print_h2(
+        'compute most likely sequence of hidden states to the end state')
     V, prev = russelhmm.viterbi(obs)
     last_state = np.argmax(V[:, -1])
     path = list(russelhmm.build_viterbi_path(prev, last_state))[::-1]
@@ -775,7 +796,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     hlp.print_h2('difference between prior and posterior marginals')
     p = posterior_marginals[1:]
     q = n_trans_p_history[:len(obs)]
-    
+
     rows = len(p)
     cols = len(p[0])
     for i in range(rows):
@@ -863,7 +884,7 @@ def run_russel_norvig_world_old(obs=[]):
     # print('probability')
     # print(dk.path_prob(D, trans_p))
     # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 10, p, 10)
-    
+
     print("============================ Eppstein ============================")
     epp_states, epp_actions = eppstein.extract_data("russelworld.txt", p)
     print(epp_actions)
@@ -875,9 +896,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" + 
+    print("Expected visits: \n" +
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
+    print("Sum of expected visits should = 1 + t. %.2f == %d." %
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -928,7 +949,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" + 
+        print("Actual expected visits given single execution: \n" +
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1092,9 +1113,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" + 
+    print("Expected visits: \n" +
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
+    print("Sum of expected visits should = 1 + t. %.2f == %d." %
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1142,7 +1163,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" + 
+        print("Actual expected visits given single execution: \n" +
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1225,7 +1246,7 @@ def main():
         start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world_all_policies(10000, 1)
+            run_russel_norvig_world_all_policies(1, 1)
             # run_russel_norvig_world_sample_policies(10)
             break
         elif selection == '2':
