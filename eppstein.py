@@ -70,7 +70,7 @@ def eppstein(trans_p, p, start_state, end_state, k):
     result = []
 
     # if not continue
-    d = dk.dijkstra2(trans_p, start_state, 3)
+    d = dk.dijkstra2(trans_p, start_state, end_state)
     if(len(d) == 0):
         print("FAILED")
         russel_norvig_world.print_policy(p, (3, 4))
