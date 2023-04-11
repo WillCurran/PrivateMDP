@@ -118,8 +118,8 @@ def examine_russel_norvig_world_seperated(exponent=3):
             policy_list = list(
                 map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
             # Call the function with n and get the result
-            # utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
-            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policy_list, r, gamma, int(n))
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
+            # utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policy_list, r, gamma, int(n))
 
             # Append the result and other object properties to the result list
 
@@ -131,6 +131,7 @@ def examine_russel_norvig_world_seperated(exponent=3):
                 'Upper Bound': upper_bound,
                 'exponent': j
             }
+
             result_array[i][j] = result
             # Create an empty list to hold the 'exponent' values
     # Iterate over the columns in the 2D array of objects
@@ -352,10 +353,10 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     markov_chain_df = pd.DataFrame(markov_chain)
     # print(markov_chain_df.to_string())
     # set obstacles to loop
-    markov_chain[5][5] = 1.0
+    # markov_chain[5][5] = 1.0
     # set terminal state to loop
-    markov_chain[3][3] = 1.0
-    markov_chain[7][7] = 1.0
+    # markov_chain[3][3] = 1.0
+    # markov_chain[7][7] = 1.0
 
     # hlp.print_h2("create hidden markov model with mdp and policy")
     start_state = 8
@@ -387,9 +388,9 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
-    trans_p[5][5] = 1.0
+    # trans_p[5][5] = 1.0
     # Set Terminal states to loop
-    trans_p[7][7] = 1.0
+    # trans_p[7][7] = 1.0
     # trans_p[end_state][end_state] = 1.0
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
@@ -419,8 +420,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     divergences = np.zeros(length)
     for i, a in enumerate(A):
         obs = a[2]
-        probabilities[i] = a[0]
         obs = [obs[i] + 1 for i in range(len(obs))]
+        probabilities[i] = russelhmm.observation_prob(obs)  # a[0]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
             emit_p), np.array(start_p))
         posterior_marginals = russelhmm.forward_backward(obs)
@@ -437,7 +438,7 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print(len(divergences))
     # print(divergences)
     expected_leakage = divergences * probabilities
-
+    print(expected_leakage)
     most_surprising_dist = np.zeros(len(states))
     most_surprising_dist[least_likely_future_state] = 1.0
 
@@ -445,10 +446,16 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print(most_surprising_dist)
     p = np.array([most_surprising_dist])
     q = np.array([future_dist])
+    print(least_likely_future_state)
+    print(p)
+    print(q)
     _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
     remaining_probability = 1 - sum(probabilities)
+    print(remaining_probability)
     expected_kl_divergence = sum(most_surprising_divergence[-1])
+    print(expected_kl_divergence)
     remaining_possible_leakage = expected_kl_divergence * remaining_probability
+    print(remaining_possible_leakage)
     # print('remaining possible leakage')
     # print(remaining_possible_leakage)
     # print('Upper Bound:')
@@ -479,10 +486,10 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     markov_chain_df = pd.DataFrame(markov_chain)
     # print(markov_chain_df.to_string())
     # set obstacles to loop
-    markov_chain[5][5] = 1.0
+    # markov_chain[5][5] = 1.0
     # set terminal state to loop
-    markov_chain[3][3] = 1.0
-    markov_chain[7][7] = 1.0
+    # markov_chain[3][3] = 1.0
+    # markov_chain[7][7] = 1.0
 
     # hlp.print_h2("create hidden markov model with mdp and policy")
     start_state = 8
@@ -514,9 +521,9 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
-    trans_p[5][5] = 1.0
+    # trans_p[5][5] = 1.0
     # Set Terminal states to loop
-    trans_p[7][7] = 1.0
+    # trans_p[7][7] = 1.0
     # trans_p[end_state][end_state]
 
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))

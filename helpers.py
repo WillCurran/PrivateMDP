@@ -83,7 +83,7 @@ def take_action(curr_state, action, T):
     coin = random.random()
     # coin = 0.5
     # 12 possible next states
-    next_states = T[curr_state, :, int(action)]
+    next_states = T[curr_state,:, int(action)]
     prob_counter = 0.0
     # randomly take next action based on weights
     for state, prob in enumerate(next_states):
@@ -273,7 +273,7 @@ def equilibrium_distribution(transition_matrix, max_iter=100, tol=1e-8):
         prev_distribution = distribution
         # Calculate new distribution
         distribution = np.sum(
-            transition_matrix[:, :, i] @ distribution, axis=1)
+            transition_matrix[:,:, i] @ distribution, axis=1)
         # Check for convergence
         if np.linalg.norm(distribution - prev_distribution) < tol:
             break
@@ -369,7 +369,7 @@ def enumerate_policies(states, actions, obstacles, terminals):
     # Enumerate the policies of the MDP
     policies = enumerate_policies(mdp)
     """
-    number_of_policies = len(actions) ** (len(states) -
+    number_of_policies = len(actions) ** (len(states) - 
                                           len(obstacles) - len(terminals))
     # Create the 2-d array of possible selections
     selections = [actions for i in range(len(states))]
@@ -448,8 +448,22 @@ def print_table(table):
     print(df.to_string())
 
 
+def kl_divergence_example():
+    p = [9 / 25, 12 / 25, 4 / 25, 0, 0]
+    q = [1 / 3, 1 / 3, 1 / 3, 0, 0]
+
+    result_1 = np.sum(kl_div(p, q), axis=-1)
+    result_2 = np.sum(kl_div(q, p), axis=-1)
+    
+    result_3 = kl_divergence_for_each_state(p, q)
+    result_4 = kl_divergence_for_each_state(q, p)
+    
+    return (result_1, result_2, np.sum(result_3[2]), np.sum(result_4[2]))
+
+
 def main():
     print("Calling main function in helpers.py")
+    print(kl_divergence_example())
 
 
 if __name__ == "__main__":

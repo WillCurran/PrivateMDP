@@ -1,6 +1,5 @@
 # https://github.com/aehuynh/hidden-markov-model
 
-
 import numpy as np
 import pandas as pd
 
@@ -57,7 +56,7 @@ class HMM:
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[n, t] = np.sum(X[:, t + 1] * self.A[n, :]
+                X[n, t] = np.sum(X[:, t + 1] * self.A[n,:]
                                  * self.B[:, obs_seq[t + 1]])
 
         return X
@@ -74,12 +73,12 @@ class HMM:
 
         F = np.zeros((T, N))
 
-        F[0, :] = self.pi * self.B[:, obs_seq[0]]
+        F[0,:] = self.pi * self.B[:, obs_seq[0]]
         F[0] = F[0] / F[0].sum()
 
         for t in range(1, T):
             for n in range(N):
-                F[t, n] = np.dot(F[t - 1, :], (self.A[:, n])
+                F[t, n] = np.dot(F[t - 1,:], (self.A[:, n])
                                  ) * self.B[n, obs_seq[t]]
             # Normalize
             sum_F = F[t].sum()
@@ -103,11 +102,11 @@ class HMM:
         T = len(obs_seq)
 
         X = np.zeros((T, N))
-        X[-1:, :] = 1
+        X[-1:,:] = 1
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[t, n] = np.sum(X[t + 1, :] * self.A[n, :]
+                X[t, n] = np.sum(X[t + 1,:] * self.A[n,:]
                                  * self.B[:, obs_seq[t + 1]])
             # Normalize
             sum_X = X[t].sum()
@@ -118,7 +117,7 @@ class HMM:
         first = np.zeros((1, N))
 
         for n in range(N):
-            first[0][n] = np.sum(X[0, :] * self.A[n, :]
+            first[0][n] = np.sum(X[0,:] * self.A[n,:]
                                  * self.B[:, obs_seq[0]])
         first = first / first.sum()
         return np.concatenate([first, X])
@@ -217,13 +216,13 @@ class HMM:
 
         xi = np.zeros((T - 1, N, N))
         for t in range(xi.shape[0]):
-            xi[t, :, :] = self.A * forw[:, [t]] * \
+            xi[t,:,:] = self.A * forw[:, [t]] * \
                 self.B[:, obs_seq[t + 1]] * back[:, t + 1] / obs_prob
 
         gamma = forw * back / obs_prob
 
         # Gamma sum excluding last column
-        gamma_sum_A = np.sum(gamma[:, :-1], axis=1, keepdims=True)
+        gamma_sum_A = np.sum(gamma[:,:-1], axis=1, keepdims=True)
         # Vector of binary values indicating whether a row in gamma_sum is 0.
         # If a gamma_sum row is 0, save old rows on update
         rows_to_keep_A = (gamma_sum_A == 0)
@@ -291,22 +290,24 @@ class HMM:
 
 
 def example():
-    umbrella_transition = [[0.7, 0.3], [0.3, 0.7]]
-    umbrella_sensor = [[0.9, 0.1], [0.2, 0.8]]
-    umbrella_initial = [0.5, 0.5]
+    umbrella_transition = [[0.7, 0.3, 0], [0.3, 0.7, 0], [0, 0, 0]]
+    umbrella_sensor = [[0.9, 0.1, 0], [0.2, 0.8, 0], [0, 0, 0]]
+    umbrella_initial = [0.5, 0.5, 0]
     umbrellaHMM = HMM(np.array(umbrella_transition), np.array(
         umbrella_sensor), np.array(umbrella_initial))
     # {umbrella, umbrella, no umbrella, umbrella, umbrella}
     umbrella_evidence = [0, 0, 1, 0, 0]
-    # result = umbrellaHMM.forward(umbrella_evidence)
-    # result = umbrellaHMM.backward(umbrella_evidence)
-    # result = umbrellaHMM.forward_backward(umbrella_evidence)
+    result_1 = umbrellaHMM.forward(umbrella_evidence)
+    result_2 = umbrellaHMM.backward(umbrella_evidence)
+    result_3 = umbrellaHMM._forward(umbrella_evidence)
+    result_4 = umbrellaHMM._backward(umbrella_evidence)
+    result_5 = umbrellaHMM.forward_backward(umbrella_evidence)
     V, prev = umbrellaHMM.viterbi(umbrella_evidence)
     last_state = np.argmax(V[:, -1])
     path = list(umbrellaHMM.build_viterbi_path(prev, last_state))[::-1]
     print(path)
-    result = umbrellaHMM.viterbi_beam(umbrella_evidence, 10)
-    return result
+    result_6 = umbrellaHMM.viterbi_beam(umbrella_evidence, 10)
+    return ('1', result_1, '2', result_2, '3', result_3, '4', result_4, '5', result_5, '6', result_6)
 
 
 def main():
