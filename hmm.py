@@ -60,11 +60,22 @@ class HMM:
                                  * self.B[:, obs_seq[t + 1]])
 
         return X
+    
+    def _forward_backward(self, obs_seq):
+
+        alpha = self._forward(obs_seq)
+        beta = self._backward(obs_seq)
+        
+        gamma = alpha * beta
+        gamma /= gamma.sum(axis=0)
+        
+        return gamma
 
     """ 
         Modified 
         Here, we are checking if the denominator sum_F is equal to zero before dividing. 
         If it is zero, we set the corresponding row in F to be a uniform distribution.
+        Includes initial state probabilities and is normalized at each step.
     """
 
     def forward(self, obs_seq):
@@ -78,8 +89,7 @@ class HMM:
 
         for t in range(1, T):
             for n in range(N):
-                F[t, n] = np.dot(F[t - 1,:], (self.A[:, n])
-                                 ) * self.B[n, obs_seq[t]]
+                F[t, n] = np.dot(F[t - 1,:], self.A[:, n]) * self.B[n, obs_seq[t]]
             # Normalize
             sum_F = F[t].sum()
             if sum_F == 0:
@@ -88,13 +98,13 @@ class HMM:
                 F[t] = F[t] / sum_F
 
         first = np.array([self.pi])
-
         return np.concatenate([first, F])
 
     """
         Modified  
         Here, we are checking if the denominator sum_X is equal to zero before dividing. 
         If it is zero, we set the corresponding row in X to be a uniform distribution.
+        Includes initial state probabilities and is normalized at each step.
     """
 
     def backward(self, obs_seq):
@@ -106,8 +116,7 @@ class HMM:
 
         for t in reversed(range(T - 1)):
             for n in range(N):
-                X[t, n] = np.sum(X[t + 1,:] * self.A[n,:]
-                                 * self.B[:, obs_seq[t + 1]])
+                X[t, n] = np.sum(X[t + 1,:] * self.A[n,:] * self.B[:, obs_seq[t + 1]])
             # Normalize
             sum_X = X[t].sum()
             if sum_X == 0:
@@ -119,6 +128,7 @@ class HMM:
         for n in range(N):
             first[0][n] = np.sum(X[0,:] * self.A[n,:]
                                  * self.B[:, obs_seq[0]])
+
         first = first / first.sum()
         return np.concatenate([first, X])
 
@@ -299,20 +309,25 @@ def example():
     umbrella_evidence = [0, 0, 1, 0, 0]
     result_1 = umbrellaHMM.forward(umbrella_evidence)
     result_2 = umbrellaHMM.backward(umbrella_evidence)
-    result_3 = umbrellaHMM._forward(umbrella_evidence)
-    result_4 = umbrellaHMM._backward(umbrella_evidence)
+    result_3 = umbrellaHMM._forward(umbrella_evidence).T
+    result_4 = umbrellaHMM._backward(umbrella_evidence).T
     result_5 = umbrellaHMM.forward_backward(umbrella_evidence)
+    result_6 = umbrellaHMM._forward_backward(umbrella_evidence).T
     V, prev = umbrellaHMM.viterbi(umbrella_evidence)
     last_state = np.argmax(V[:, -1])
     path = list(umbrellaHMM.build_viterbi_path(prev, last_state))[::-1]
     print(path)
-    result_6 = umbrellaHMM.viterbi_beam(umbrella_evidence, 10)
-    return ('1', result_1, '2', result_2, '3', result_3, '4', result_4, '5', result_5, '6', result_6)
+    result_7 = umbrellaHMM.viterbi_beam(umbrella_evidence, 10)
+    return (result_1, result_2, result_3, result_4, result_5, result_6)
 
 
 def main():
     result = example()
-    print(result)
+    labels = ['Modified Forward Algorithm', 'Modified Backward Algorihm', 'Original Forward Algorithm', 'Original Backward Algorithm', 'Forward Backward Algorithm', 'Orginal Forward Backward Algorithm', 'Viterbi Beam']
+
+    for i in range(len(result)):
+         print(labels[i])
+         print(result[i])
 
     # Create a 2D numpy array with random values
     # array = np.random.rand(5, 3)

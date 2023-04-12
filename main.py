@@ -841,10 +841,10 @@ def run_russel_norvig_world_old(obs=[]):
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df.to_string())
     # set obstacles to loop
-    markov_chain[5][5] = 1.0
+    # markov_chain[5][5] = 1.0
     # set terminal state to loop
-    markov_chain[3][3] = 1.0
-    markov_chain[7][7] = 1.0
+    # markov_chain[3][3] = 1.0
+    # markov_chain[7][7] = 1.0
     # set start state
     start_p = [0.0, 0.0, 0.0, 0.0,
                0.0, 0.0, 0.0, 0.0,
@@ -935,11 +935,11 @@ def run_russel_norvig_world_old(obs=[]):
     print(obs)
     print("=========================== Analyze HMM ==========================")
     # Set obstacle states to loop
-    trans_p[5][5] = 1.0
+    # trans_p[5][5] = 1.0
     # Set Terminal states to loop
-    trans_p[7][7] = 1.0
+    # trans_p[7][7] = 1.0
     end_state = 3
-    trans_p[end_state][end_state] = 1.0
+    # trans_p[end_state][end_state] = 1.0
     trans_p_df = pd.DataFrame(trans_p)
     emit_p_df = pd.DataFrame(emit_p)
     print("##OBSERVATIONS##")
@@ -987,11 +987,15 @@ def run_russel_norvig_world_old(obs=[]):
     print("observation sequence:")
     print(obs)
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
-    posterior_marginals = russelhmm.forward_backward(obs)
+    forward = russelhmm.forward(obs)
+    backward = russelhmm.backward(obs)
+    print(forward)
+    print(backward)
+    posterior_marginals = russelhmm._forward_backward(obs).T
     print("posterior marginals:")
     print(pd.DataFrame(posterior_marginals).to_string())
     print("========== Difference Between Prior and Posterior Marginals  ==========")
-    p = posterior_marginals[1:]
+    p = posterior_marginals  # [1:]
     q = state_history[:len(obs)]
 
     rows = len(p)
@@ -1046,8 +1050,8 @@ def run_russel_norvig_world_old(obs=[]):
         obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
             emit_p), np.array(start_p))
-        posterior_marginals = russelhmm.forward_backward(obs)
-        p = posterior_marginals[1:]
+        posterior_marginals = russelhmm._forward_backward(obs).T
+        p = posterior_marginals  # [1:]
         q = state_history[:len(obs)]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences.append(divergence[-1][end_state])
@@ -1087,7 +1091,7 @@ def run_river_world_old(obs=[]):
     print(markov_chain_df.to_string())
 
     # set terminal state
-    markov_chain[7][7] = 1.0
+    # markov_chain[7][7] = 1.0
     # set start state
     start_p = [0.0, 0.0, 0.0, 0.0,
                1.0, 0.0, 0.0, 0.0,
@@ -1152,7 +1156,7 @@ def run_river_world_old(obs=[]):
     print(obs)
     print("===========================Analyze HMM==========================")
     end_state = 7
-    trans_p[end_state][end_state] = 1.0  # setting terminal state?
+    # trans_p[end_state][end_state] = 1.0  # setting terminal state?
 
     trans_p_df = pd.DataFrame(trans_p)
     emit_p_df = pd.DataFrame(emit_p)
@@ -1201,11 +1205,15 @@ def run_river_world_old(obs=[]):
     print("observation sequence:")
     print(obs)
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
-    posterior_marginals = russelhmm.forward_backward(obs)
+    forward = russelhmm.forward(obs)
+    backward = russelhmm.backward(obs)
+    print(forward)
+    print(backward)
+    posterior_marginals = russelhmm._forward_backward(obs).T
     print("posterior marginals:")
     print(pd.DataFrame(posterior_marginals).to_string())
     print("========== Difference Between Prior and Posterior Marginals  ==========")
-    p = posterior_marginals[1:]
+    p = posterior_marginals  # [1:]
     q = state_history[:len(obs)]
 
     rows = len(p)

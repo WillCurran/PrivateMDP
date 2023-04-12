@@ -247,6 +247,12 @@ def kl_divergence_for_each_state(p, q):
 
 
 def stationary_distribution(P):
+    # Identify all-zero rows in the transition matrix
+    zero_rows = np.where(~P.any(axis=1))[0]
+
+    # Set the diagonal elements of the terminal states and obstacles to 1
+    P[zero_rows, zero_rows] = 1
+
     # Find the eigenvalues and eigenvectors
     eigenvalues, eigenvectors = np.linalg.eig(P.T)
 
