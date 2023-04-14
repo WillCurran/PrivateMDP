@@ -75,37 +75,59 @@ def action_to_str_river_world(a):
         result = "|"
     return result
 
+# def take_action(curr_state, action, T):
+#     """Return the next state and the given current state and the action chosen
+#
+#     """
+#     coin = random.random()
+#     # coin = 0.5
+#     # 12 possible next states
+#     next_states = T[curr_state,:, int(action)]
+#     prob_counter = 0.0
+#     # randomly take next action based on weights
+#     for state, prob in enumerate(next_states):
+#         if coin < prob_counter + prob:
+#             return state
+#         prob_counter += prob
+#     return -1
 
-def take_action(curr_state, action, T):
-    """Return the next state and the given current state and the action chosen
+# def execute_policy(p, T, start, max_t):
+#     """Place an agent in the environment and generate a stream of actions
+#
+#     """
+#     curr_state = start
+#     output = []
+#     # no longer than max_t steps
+#     for i in range(max_t):
+#         output.append(int(p[curr_state]))
+#         if p[curr_state] == -1:
+#             break
+#         curr_state = take_action(curr_state, p[curr_state], T)
+#     return output
 
+
+def take_action(state, action, T):
     """
-    coin = random.random()
-    # coin = 0.5
-    # 12 possible next states
-    next_states = T[curr_state,:, int(action)]
-    prob_counter = 0.0
-    # randomly take next action based on weights
-    for state, prob in enumerate(next_states):
-        if coin < prob_counter + prob:
-            return state
-        prob_counter += prob
-    return -1
+    Given a state, an action, and a transition model T,
+    return the next state based on the probabilities of the transition model.
+    """
+    next_states = np.nonzero(T[state,:, action])[0]
+    probs = T[state, next_states, action]
+    next_state = np.random.choice(next_states, p=probs)
+    return next_state
 
 
 def execute_policy(p, T, start, max_t):
-    """Place an agent in the environment and generate a stream of actions
-
-    """
+    """Place an agent in the environment and generate a stream of actions."""
     curr_state = start
-    output = []
-    # no longer than max_t steps
+    output = np.empty(max_t, dtype=int)
     for i in range(max_t):
-        output.append(int(p[curr_state]))
-        if p[curr_state] == -1:
+        action = int(p[curr_state])
+        output[i] = action
+        if action == -1:
             break
-        curr_state = take_action(curr_state, p[curr_state], T)
-    return output
+        curr_state = take_action(curr_state, action, T)
+    return output[:i + 1]
 
 
 def to_markov_chain(p, T, max_t):
@@ -465,6 +487,41 @@ def kl_divergence_example():
     result_4 = kl_divergence_for_each_state(q, p)
     
     return (result_1, result_2, np.sum(result_3[2]), np.sum(result_4[2]))
+
+
+def can_reach_terminal_states(start_state, terminal_states, T):
+    # Get the number of states and actions from the transition model
+    num_states, _, num_actions = T.shape
+    
+    # Initialize the set of reachable states with the start state
+    reachable_states = {start_state}
+    
+    # Keep track of previously reachable states to detect convergence
+    prev_reachable_states = set()
+    
+    # Repeat until convergence
+    while reachable_states != prev_reachable_states:
+        # Update the set of previously reachable states
+        prev_reachable_states = reachable_states.copy()
+        
+        # For each reachable state, check if it can reach any new states
+        for state in prev_reachable_states:
+            for action in range(num_actions):
+                for next_state in range(num_states):
+                    if T[state, next_state, action] > 0:
+                        reachable_states.add(next_state)
+    return any(state in terminal_states for state in reachable_states)
+
+
+def can_any_state_reach_terminal_states(T, terminal_states):
+    n_states = T.shape[0]
+    Q = np.zeros((n_states, n_states))
+    for a in range(T.shape[2]):
+        Q += T[:,:, a]
+    for t in terminal_states:
+        if np.any(Q[:, t] > 0):
+            return True
+    return False
 
 
 def main():

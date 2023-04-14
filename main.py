@@ -401,9 +401,9 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
 
     # A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
 
-    # start_states = [0, 1, 2, 4, 6, 8, 9, 10, 11]
-    start_states = [8]
-    terminal_states = [3]
+    start_states = [0, 1, 2, 4, 6, 8, 9, 10, 11]
+    # start_states = [8]
+    terminal_states = [3, 7]
 
     A = []
     for start, terminal in itertools.product(start_states, terminal_states):
@@ -540,7 +540,9 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # while len(A) < num_samples:
     # print(num_samples)
     for i in range(num_samples):
-        obs = hlp.execute_policy(p, T, start_state, 12)
+        obs = hlp.execute_policy(p, T, start_state, 20)
+        actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+        # print(actions)
         obs = [obs[i] + 1 for i in range(len(obs))]
         obs_tuple = tuple(obs)  # Convert list to tuple for set membership test
         if obs_tuple not in unique_obs:
@@ -564,8 +566,6 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     for i, a in enumerate(A):
         obs = a[0]
         probabilities[i] = a[1]
-        actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
-        print(actions)
         # obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
             emit_p), np.array(start_p))
@@ -679,6 +679,7 @@ def run_russel_norvig_world_optimal_policy_only():
     hlp.print_h2('compute most likely sequence of actions to the end state')
     # A = dk.kdijkstra_actions(trans_p, start_state, end_state, 1, p, 1)
     state_index_list, A = eppstein.extract_data("russelworld.txt", p)
+    
     print('result')
     print(A[0])
     obs = A[0][0]
@@ -850,6 +851,7 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
 def run_russel_norvig_world_old(obs=[]):
     hlp.print_h1('create markov decision process and compute optimal policy')
     T, p, u, r, gamma, p_hist = russel_norvig_world.main_iterative()
+    print(np.array(T))
     print("======================= A Priori Analysis =======================")
     print("================== MDP + Policy = Markov Chain ==================")
     print("Policy: ")
@@ -1284,8 +1286,8 @@ def main():
         start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            run_russel_norvig_world_all_policies(1, 1)
-            # run_russel_norvig_world_sample_policies(10)
+            # run_russel_norvig_world_all_policies(1, 1)
+            run_russel_norvig_world_sample_policies(10000)
             break
         elif selection == '2':
             print('you selected option 2')
