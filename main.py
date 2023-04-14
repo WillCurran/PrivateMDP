@@ -246,10 +246,9 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
             # p = policies[i]'
         for i in range(length):
             p = policies[i]
-            # result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
-            result = run_russel_norvig_world_single_policy_only(
-                T, p, r, gamma, num_samples)
-            state_utilities[i, :] = result[0]
+            result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples)
+            # result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
+            state_utilities[i,:] = result[0]
             start_state_utilities[i] = result[0][8]
             lower_bounds[i] = result[2]
             upper_bounds[i] = result[1]
@@ -338,6 +337,7 @@ def run_river_world():
 
 
 def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
+    print('eppstein')
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -389,7 +389,7 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # hlp.print_world(future_dist)
     # print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0][0]
     # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
@@ -417,8 +417,6 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print("state probability after 100 steps")
     # hlp.print_world(future_dist)
     # print("minimum non-zero state probability")
-    # least_likely_future_state = np.where(future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
-    # print(least_likely_future_state)
     length = len(A)
     # print(future_dist[least_likely_future_state])
     probabilities = np.zeros(length)
@@ -433,7 +431,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
         # p = posterior_marginals[1:]
         # q = n_trans_p_history[:len(obs)]
         p = [posterior_marginals[-1]]
-        max_steps = np.minimum(len(n_trans_p_history) - 1, len(obs) - 1)
+        # _forward_backward output does not include initial state probabilities, state_probabilities_up_to_n_steps does
+        max_steps = np.minimum(len(n_trans_p_history) - 1, len(obs))
         q = [n_trans_p_history[max_steps]]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
 
@@ -472,6 +471,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
 
 
 def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples):
+    print('random sampling')
+    russel_norvig_world.print_policy(p, (3, 4))
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -523,7 +524,7 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     # hlp.print_world(future_dist)
     # print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0][0]
     # print(least_likely_future_state)
     # hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
@@ -563,6 +564,8 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     for i, a in enumerate(A):
         obs = a[0]
         probabilities[i] = a[1]
+        actions = [hlp.action_to_str_russel_norvig_world(a) for a in obs]
+        print(actions)
         # obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
             emit_p), np.array(start_p))
@@ -570,7 +573,8 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         # p = posterior_marginals[1:]
         # q = n_trans_p_history[:len(obs)]
         p = [posterior_marginals[-1]]
-        max_steps = np.minimum(len(n_trans_p_history) - 1, len(obs) - 1)
+        # _forward_backward output does not include initial state probabilities, state_probabilities_up_to_n_steps does
+        max_steps = np.minimum(len(n_trans_p_history) - 1, len(obs))
         q = [n_trans_p_history[max_steps]]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences[i] = sum(divergence[-1])
@@ -592,15 +596,24 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     remaining_probability = 1 - sum(probabilities)
     expected_kl_divergence = sum(most_surprising_divergence[-1])
     remaining_possible_leakage = expected_kl_divergence * remaining_probability
-    print('debug')
+
+    print('p')
+    print(p)
+    print('q')
+    print(q)
+    print('expected kl divergence')
     print(expected_kl_divergence)
+    print('total probability accounted for')
+    print(len(probabilities))
+    print(sum(probabilities))
+    print('remaining probability')
     print(remaining_probability)
-    # print('remaining possible leakage')
-    # print(remaining_possible_leakage)
-    # print('Upper Bound:')
-    # print(sum(expected_leakage + [remaining_possible_leakage]))
-    # print('Lower Bound:')
-    # print(sum(expected_leakage))
+    print('remaining possible leakage')
+    print(remaining_possible_leakage)
+    print('Upper Bound:')
+    print(sum(expected_leakage + [remaining_possible_leakage]))
+    print('Lower Bound:')
+    print(sum(expected_leakage))
     return (u, sum(expected_leakage + [remaining_possible_leakage]), sum(expected_leakage))
 
 
@@ -621,10 +634,10 @@ def run_russel_norvig_world_optimal_policy_only():
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df.to_string())
     # set obstacles to loop
-    markov_chain[5][5] = 1.0
+    # markov_chain[5][5] = 1.0
     # set terminal state to loop
-    markov_chain[3][3] = 1.0
-    markov_chain[7][7] = 1.0
+    # markov_chain[3][3] = 1.0
+    # markov_chain[7][7] = 1.0
 
     hlp.print_h2("create hidden markov model with mdp and policy")
     start_state = 8
@@ -650,17 +663,17 @@ def run_russel_norvig_world_optimal_policy_only():
     future_dist = np.array(future_dist)
     print("state probability after 100 steps")
     hlp.print_world(future_dist)
-    print("minimum non-zero probability")
+    print("least likely future state")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0][0]
     print(least_likely_future_state)
 
     hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
-    trans_p[5][5] = 1.0
+    # trans_p[5][5] = 1.0
     # Set Terminal states to loop
-    trans_p[7][7] = 1.0
-    trans_p[end_state][end_state]
+    # trans_p[7][7] = 1.0
+    # trans_p[end_state][end_state]
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
     hlp.print_h2('compute most likely sequence of actions to the end state')
@@ -689,9 +702,6 @@ def run_russel_norvig_world_optimal_policy_only():
     print("state probability after 100 steps")
     hlp.print_world(future_dist)
     print("minimum non-zero state probability")
-    least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
-    print(least_likely_future_state)
     print(future_dist[least_likely_future_state])
     probabilities = []
     divergences = []
@@ -702,9 +712,9 @@ def run_russel_norvig_world_optimal_policy_only():
         obs = [obs[i] + 1 for i in range(len(obs))]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
             emit_p), np.array(start_p))
-        posterior_marginals = russelhmm.forward_backward(obs)
-        p = posterior_marginals[1:]
-        q = n_trans_p_history[:len(obs)]
+        posterior_marginals = russelhmm._forward_backward(obs).T
+        p = posterior_marginals
+        q = n_trans_p_history[1:len(obs) + 1]
         _p, _q, divergence = hlp.kl_divergence_for_each_state(p, q)
         divergences.append(sum(divergence[-1]))
     print("probabilities accounted for")
@@ -749,10 +759,10 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     markov_chain_df = pd.DataFrame(markov_chain)
     print(markov_chain_df.to_string())
     # set obstacles to loop
-    markov_chain[5][5] = 1.0
+    # markov_chain[5][5] = 1.0
     # set terminal state to loop
-    markov_chain[3][3] = 1.0
-    markov_chain[7][7] = 1.0
+    # markov_chain[3][3] = 1.0
+    # markov_chain[7][7] = 1.0
 
     hlp.print_h2("create hidden markov model with mdp and policy")
     start_state = 8
@@ -780,14 +790,14 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     hlp.print_world(future_dist)
     print("minimum non-zero state probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0][0]
     print(least_likely_future_state)
     hlp.print_h2('posterior marginals')
     # Set obstacle states to loop
-    trans_p[5][5] = 1.0
+    # trans_p[5][5] = 1.0
     # Set Terminal states to loop
-    trans_p[7][7] = 1.0
-    trans_p[end_state][end_state]
+    # trans_p[7][7] = 1.0
+    # trans_p[end_state][end_state]
     russelhmm = hmm.HMM(np.array(trans_p), np.array(emit_p), np.array(start_p))
 
     hlp.print_h2('compute most likely sequence of actions to the end state')
@@ -810,12 +820,12 @@ def run_russel_norvig_world_optimal_policy_viterbi_path_only():
     path = list(russelhmm.build_viterbi_path(prev, last_state))[::-1]
     print(path)
 
-    posterior_marginals = russelhmm.forward_backward(obs)
+    posterior_marginals = russelhmm._forward_backward(obs).T
     print('forward backward result:')
     hlp.print_table(posterior_marginals)
     hlp.print_h2('difference between prior and posterior marginals')
-    p = posterior_marginals[1:]
-    q = n_trans_p_history[:len(obs)]
+    p = posterior_marginals
+    q = n_trans_p_history[1:len(obs) + 1]
 
     rows = len(p)
     cols = len(p[0])
@@ -916,9 +926,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -969,7 +979,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1047,7 +1057,7 @@ def run_russel_norvig_world_old(obs=[]):
     hlp.print_world(future_dist)
     print("minimum non-zero probability")
     least_likely_future_state = np.where(
-        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0]
+        future_dist == np.min(future_dist[np.nonzero(future_dist)]))[0][0]
     print(least_likely_future_state)
     print(future_dist[least_likely_future_state])
     probabilities = []
@@ -1137,9 +1147,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1187,7 +1197,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1299,7 +1309,7 @@ def main():
             break
         elif selection == '7':
             print('you selected option 7')
-            examine_russel_norvig_world_seperated(1)
+            examine_russel_norvig_world_seperated(0)
             break
         else:
             print('Invalid selection. Please try again.\n')
