@@ -12,9 +12,7 @@ import numpy as np
 import pandas as pd
 import policy_iteration as russel_norvig_world
 
-
 graph_path = "eppstein_graphs/graph.csv"
-
 
 # def eppstein_output_to_list(p, output):
 #     result = []
@@ -66,7 +64,6 @@ def extract_data(filename, pi):
 
     return data, obs
 
-
 # def trans_to_graph(trans_p, path):
 #     g = []
 #     for i in range(len(trans_p)):
@@ -97,8 +94,8 @@ def eppstein(trans_p, p, start_state, end_state, k):
     # if not continue
     d = dk.dijkstra2(trans_p, start_state, end_state)
     if(len(d) == 0):
-        print("FAILED")
-        russel_norvig_world.print_policy(p, (3, 4))
+        # print("FAILED")
+        # russel_norvig_world.print_policy(p, (3, 4))
         return result
     classpath = os.getcwd() + "/k-shortest-paths-master/out/production/k-shortest-paths-master"
     jpype.addClassPath(classpath)
@@ -114,8 +111,8 @@ def eppstein(trans_p, p, start_state, end_state, k):
     MyClass.main(args)
     output_string = str(output_stream.toString())
     result = eppstein_output_to_list(p, output_string)
-    print(output_string)
-    print('end')
+    # print(output_string)
+    # print('end')
     return result
 
 

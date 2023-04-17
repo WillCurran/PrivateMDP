@@ -29,7 +29,8 @@ import policy_iteration2 as river_world
 def examine_russel_norvig_world(exponent=3):
     file_name = 'out/run_russel_norvig_world_all_policies_10000_executions.csv'
     df = pd.read_csv(file_name)
-    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    # df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8].astype(float)
     print(df['start_state_utility'])
     df['delta'] = df['Upper Bound'] - df['Lower Bound']
     df_grouped = df.groupby(['start_state_utility'])
@@ -79,6 +80,7 @@ def examine_russel_norvig_world(exponent=3):
             upper_bounds_list.append(upper_bound)
 
     print(len(result_list))
+    start_state_utilities_list = [-1 * x for x in start_state_utilities_list]
     pareto.pareto_front(start_state_utilities_list,
                         lower_bounds_list, upper_bounds_list, "Pareto")
 
@@ -86,7 +88,8 @@ def examine_russel_norvig_world(exponent=3):
 def examine_russel_norvig_world_seperated(exponent=3):
     file_name = 'out/run_russel_norvig_world_all_policies_10000_executions.csv'
     df = pd.read_csv(file_name)
-    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    # df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8]
+    df['start_state_utility'] = df['Utility'].str.split(',', expand=True)[8].astype(float)
     print(df['start_state_utility'])
     df['delta'] = df['Upper Bound'] - df['Lower Bound']
     df_grouped = df.groupby(['start_state_utility'])
@@ -110,21 +113,21 @@ def examine_russel_norvig_world_seperated(exponent=3):
     # return
     result_array = np.empty((len(idx), exponent + 1), dtype=object)
     for i, p in enumerate(df.iloc[idx].iterrows()):
-        if i != 3:
-            continue
+        # if i != 3:
+        #    continue
+        policy_str = p[1]['Policy']
+        policy_list = list(
+            map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
+        russel_norvig_world.print_policy(policy_list, (3, 4))
         # Iterate over the range of exponents
         for j in range(exponent + 1):
 
             # Calculate n = 10^exponent
             n = math.pow(10, j)
-            policy_str = p[1]['Policy']
-            policy_list = list(
-                map(lambda x: np.nan if x == 'nan' else int(x), policy_str[1:-1].split(', ')))
             # Call the function with n and get the result
             print(i)
             print(j)
-            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
-                T, policy_list, r, gamma, int(n))
+            utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, policy_list, r, gamma, int(n))
             # utility, upper_bound, lower_bound = run_russel_norvig_world_single_policy_only(T, policy_list, r, gamma, int(n))
 
             # Append the result and other object properties to the result list
@@ -152,7 +155,11 @@ def examine_russel_norvig_world_seperated(exponent=3):
             start_state_utilities_list.append(obj['start_state_utility'])
             lower_bounds_list.append(obj['Lower Bound'])
             upper_bounds_list.append(obj['Upper Bound'])
-        #pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
+        start_state_utilities_list = [-1 * x for x in start_state_utilities_list]
+        # print(start_state_utilities_list)
+        # print(lower_bounds_list)
+        # print(upper_bounds_list)
+        pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "10^" + str(exponents_list[0]) + " policy executions")
 
 
 def run_russel_norvig_world_optimal_policy_iteration_history(num_samples=1):
@@ -191,7 +198,7 @@ def run_russel_norvig_world_optimal_policy_iteration_history(num_samples=1):
         average_utility.append(r[0][8])
         lowers.append(r[2])
         uppers.append(r[1])
-    #pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
+    # pareto.pareto_front(average_utility, lowers, uppers, "Pareto")
     pareto.pareto_front_separate(
         average_utility, lowers, uppers, 'lower bound', "upper bound")
 
@@ -227,7 +234,7 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     #    result.append(run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples))
     # print(len(result))
 
-    file_name = 'out/run_russel_norvig_world_all_policies.csv'
+    file_name = 'out/run_russel_norvig_world_all_policies_10000_executions.csv'
 
     if os.path.isfile(file_name):
         print(f"The file '{file_name}' exists.")
@@ -252,7 +259,7 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
             result = run_russel_norvig_world_single_policy_only_with_random_sample_observations(
                 T, p, r, gamma, num_samples)
             # result = run_russel_norvig_world_single_policy_only(T, p, r, gamma, num_samples)
-            state_utilities[i, :] = result[0]
+            state_utilities[i,:] = result[0]
             start_state_utilities[i] = result[0][8]
             lower_bounds[i] = result[2]
             upper_bounds[i] = result[1]
@@ -265,12 +272,11 @@ def run_russel_norvig_world_all_policies(num_samples=1, num_policies=np.inf):
     # extract the required lists
     # policy_list = df['Policy'].tolist()
     df['Utility'] = df['Utility'].apply(ast.literal_eval)
-    start_state_utilities_list = df['Utility'].apply(
-        lambda x: x[8] * -1).tolist()
+    start_state_utilities_list = df['Utility'].apply(lambda x: x[8] * -1).tolist()
     lower_bounds_list = df['Lower Bound'].tolist()
     upper_bounds_list = df['Upper Bound'].tolist()
     # pareto.plot_bounds(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
-    # pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
+    pareto.pareto_front(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Pareto")
     # pareto.pareto_front_separate(start_state_utilities_list, lower_bounds_list, upper_bounds_list, "Lower Bound Pareto Front", "Upper Bound Pareto")
 
 
@@ -341,7 +347,7 @@ def run_river_world():
 
 
 def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
-    print('eppstein')
+    print('eppstein observation')
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -405,15 +411,23 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
 
     # A = eppstein.eppstein(trans_p, p, start_state, end_state, k)
 
-    start_states = [0, 1, 2, 4, 6, 8, 9, 10, 11]
-    # start_states = [8]
+    # start_states = [0, 1, 2, 4, 6, 8, 9, 10, 11]
+    start_states = [8]
     terminal_states = [3, 7]
 
-    A = []
-    for start, terminal in itertools.product(start_states, terminal_states):
-        # print(f"Start state: {start}, Terminal state: {terminal}")
-        A += eppstein.eppstein(trans_p, p, start, terminal, k)
+    # A = []
+    # for start, terminal in itertools.product(start_states, terminal_states):
+    #     # print(f"Start state: {start}, Terminal state: {terminal}")
+    #     A += eppstein.eppstein(trans_p, p, start, terminal, k)
 
+    unique_emissions = set()
+    for start, terminal in itertools.product(start_states, terminal_states):
+        emissions_list = eppstein.eppstein(trans_p, p, start, terminal, k)
+        for prob, hidden_states, emissions in emissions_list:
+            if tuple(emissions) not in unique_emissions:
+                unique_emissions.add(tuple(emissions))
+    
+    A = list(unique_emissions)
     # posterior_marginals = russelhmm.forward_backward(obs)
     # hlp.print_h2("expected leakage of the end state")
     # future_dist = hlp.state_probability_after_n_steps(markov_chain, start_p, 100)
@@ -426,7 +440,8 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     probabilities = np.zeros(length)
     divergences = np.zeros(length)
     for i, a in enumerate(A):
-        obs = a[2]
+        obs = a
+        # print(obs)
         obs = [obs[i] + 1 for i in range(len(obs))]
         probabilities[i] = russelhmm.observation_prob(obs)  # a[0]
         russelhmm = hmm.HMM(np.array(trans_p), np.array(
@@ -447,7 +462,6 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print(len(divergences))
     # print(divergences)
     expected_leakage = divergences * probabilities
-    print(expected_leakage)
     most_surprising_dist = np.zeros(len(states))
     most_surprising_dist[least_likely_future_state] = 1.0
 
@@ -455,28 +469,36 @@ def run_russel_norvig_world_single_policy_only(T, p, r, gamma, k):
     # print(most_surprising_dist)
     p = np.array([most_surprising_dist])
     q = np.array([future_dist])
-    print(least_likely_future_state)
-    print(p)
-    print(q)
     _p, _q, most_surprising_divergence = hlp.kl_divergence_for_each_state(p, q)
     remaining_probability = 1 - sum(probabilities)
-    print(remaining_probability)
     expected_kl_divergence = sum(most_surprising_divergence[-1])
-    print(expected_kl_divergence)
     remaining_possible_leakage = expected_kl_divergence * remaining_probability
+
+    print('p')
+    print(p)
+    print('q')
+    print(q)
+    print('expected kl divergence')
+    print(expected_kl_divergence)
+    print('total number of unique observations')
+    print(len(probabilities))
+    print('total probability accounted for')
+    print(sum(probabilities))
+    print('most suprising divergence')
+    print(most_surprising_divergence)
+    print('remaining probability')
+    print(remaining_probability)
+    print('remaining possible leakage')
     print(remaining_possible_leakage)
-    # print('remaining possible leakage')
-    # print(remaining_possible_leakage)
-    # print('Upper Bound:')
-    # print(sum(expected_leakage + [remaining_possible_leakage]))
-    # print('Lower Bound:')
-    # print(sum(expected_leakage))
-    return (u, sum(expected_leakage + [remaining_possible_leakage]), sum(expected_leakage))
+    print('Upper Bound')
+    print(sum(expected_leakage) + remaining_possible_leakage)
+    print('Lower Bound')
+    print(sum(expected_leakage))
+    return (u, sum(expected_leakage) + remaining_possible_leakage, sum(expected_leakage))
 
 
 def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T, p, r, gamma, num_samples):
-    print('random sampling')
-    russel_norvig_world.print_policy(p, (3, 4))
+    print('random sample observations')
     """Run calculation under russel and norvig world.
 
     This version only a given policy and has no print statements
@@ -551,6 +573,9 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
         obs_tuple = tuple(obs)  # Convert list to tuple for set membership test
         if obs_tuple not in unique_obs:
             prob = russelhmm.observation_prob(obs)
+            # prob = np.clip(prob, 0, 1- )
+            # print('prob')
+            # print(prob)
             A.append((obs, prob))
             unique_obs.add(obs_tuple)
     # print(A)
@@ -604,28 +629,29 @@ def run_russel_norvig_world_single_policy_only_with_random_sample_observations(T
     remaining_possible_leakage = expected_kl_divergence * remaining_probability
 
     # Set the display format for NumPy arrays
-    #np.set_printoptions(precision=40, suppress=True)
+    # np.set_printoptions(precision=40, suppress=True)
 
-    # print('p')
-    # print(p)
-    # print('q')
-    # print(q)
-    # print('expected kl divergence')
-    # print(expected_kl_divergence)
-    # print('total probability accounted for')
-    # print(len(probabilities))
-    # print(sum(probabilities))
-    # print('most suprising divergence')
-    # print(most_surprising_divergence)
-    # print('remaining probability')
-    # print(remaining_probability)
-    # print('remaining possible leakage')
-    # print(remaining_possible_leakage)
-    # print('Upper Bound:')
-    # print(sum(expected_leakage + [remaining_possible_leakage]))
-    # print('Lower Bound:')
-    # print(sum(expected_leakage))
-    return (u, sum(expected_leakage + [remaining_possible_leakage]), sum(expected_leakage))
+    print('p')
+    print(p)
+    print('q')
+    print(q)
+    print('expected kl divergence')
+    print(expected_kl_divergence)
+    print('total number of unique observations')
+    print(len(probabilities))
+    print('total probability accounted for')
+    print(sum(probabilities))
+    print('most suprising divergence')
+    print(most_surprising_divergence)
+    print('remaining probability')
+    print(remaining_probability)
+    print('remaining possible leakage')
+    print(remaining_possible_leakage)
+    print('upper bound')
+    print(sum(expected_leakage) + remaining_possible_leakage)
+    print('lower bound')
+    print(sum(expected_leakage))
+    return (u, sum(expected_leakage) + remaining_possible_leakage, sum(expected_leakage))
 
 
 def run_russel_norvig_world_optimal_policy_only():
@@ -749,7 +775,7 @@ def run_russel_norvig_world_optimal_policy_only():
     print('remaining possible leakage')
     print(remaining_possible_leakage)
     print('Upper Bound:')
-    print(sum(expected_leakage + [remaining_possible_leakage]))
+    print(sum(expected_leakage) + remaining_possible_leakage)
     print('Lower Bound:')
     print(sum(expected_leakage))
 
@@ -939,9 +965,9 @@ def run_russel_norvig_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -992,7 +1018,7 @@ def run_russel_norvig_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1104,7 +1130,7 @@ def run_russel_norvig_world_old(obs=[]):
         remaining_probability
     print(remaining_possible_leakage)
     print('Upper Bound:')
-    print(sum(expected_leakage + [remaining_possible_leakage]))
+    print(sum(expected_leakage) + remaining_possible_leakage)
     print('Lower Bound:')
     print(sum(expected_leakage))
 
@@ -1160,9 +1186,9 @@ def run_river_world_old(obs=[]):
     interesting_state = 3
     prior_expected_visits = hlp.get_expected_visits(
         states, start_p, T, p, interesting_time)
-    print("Expected visits: \n" +
+    print("Expected visits: \n" + 
           ', '.join(["%.2f" % prior_expected_visits[st] for st in states]))
-    print("Sum of expected visits should = 1 + t. %.2f == %d." %
+    print("Sum of expected visits should = 1 + t. %.2f == %d." % 
           (sum(prior_expected_visits), 1 + interesting_time))
     if not obs:
         print("====================== Executing Policy ======================")
@@ -1210,7 +1236,7 @@ def run_river_world_old(obs=[]):
     else:
         post_expected_visits = [
             dp_table[interesting_time][st]["prob"] for st in states]
-        print("Actual expected visits given single execution: \n" +
+        print("Actual expected visits given single execution: \n" + 
               ', '.join(["%.2f" % post_expected_visits[st] for st in states]))
         print("====================== INFORMATION GAIN ====================")
         # ig = hlp.information_gain(prior_expected_visits, post_expected_visits, interesting_state, max_path_prob)
@@ -1297,9 +1323,9 @@ def main():
         start_time = time.time()
         if selection == '1':
             print('you selected option 1')
-            # run_russel_norvig_world_all_policies(1, 1)
+            run_russel_norvig_world_all_policies(1, 1)
             # run_russel_norvig_world_sample_policies(1)
-            run_russel_norvig_world_optimal_policy_iteration_history(100)
+            # run_russel_norvig_world_optimal_policy_iteration_history(10)
             break
         elif selection == '2':
             print('you selected option 2')
@@ -1323,7 +1349,7 @@ def main():
             break
         elif selection == '7':
             print('you selected option 7')
-            examine_russel_norvig_world_seperated(0)
+            examine_russel_norvig_world_seperated(1)
             break
         else:
             print('Invalid selection. Please try again.\n')
