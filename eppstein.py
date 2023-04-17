@@ -1,3 +1,5 @@
+from io import StringIO
+import math
 import math
 import os
 import time
@@ -6,23 +8,35 @@ import jpype
 
 import dijkstras as dk
 import helpers as h
+import numpy as np
 import pandas as pd
 import policy_iteration as russel_norvig_world
+
 
 graph_path = "eppstein_graphs/graph.csv"
 
 
+# def eppstein_output_to_list(p, output):
+#     result = []
+#     # Parse result string to create array of tuples
+#     # (probability, states, actions)
+#     for line in output.splitlines()[:-1]:
+#         parts = line.split(':')
+#         num = float(parts[0])
+#         arr_str = parts[1].strip()[1:-1]
+#         arr = [int(x) for x in arr_str.split(',')]
+#         actions = [int(p[x]) for x in arr]
+#         result.append((num, arr, actions))
+#     return result
+
+
 def eppstein_output_to_list(p, output):
-    result = []
-    # Parse result string to create array of tuples
-    # (probability, states, actions)
-    for line in output.splitlines()[:-1]:
-        parts = line.split(':')
-        num = float(parts[0])
-        arr_str = parts[1].strip()[1:-1]
-        arr = [int(x) for x in arr_str.split(',')]
-        actions = [int(p[x]) for x in arr]
-        result.append((num, arr, actions))
+    # Parse result string to create list of tuples (probability, states, actions)
+    result = [(float(line.split(':')[0]),
+               [int(x) for x in line.split(':')[1].strip()[1:-1].split(',')],
+               [int(p[int(x)])
+                for x in line.split(':')[1].strip()[1:-1].split(',')]
+               ) for line in output.splitlines()[:-1]]
     return result
 
 
@@ -53,12 +67,23 @@ def extract_data(filename, pi):
     return data, obs
 
 
+# def trans_to_graph(trans_p, path):
+#     g = []
+#     for i in range(len(trans_p)):
+#         for j in range(len(trans_p[i])):
+#             if trans_p[i][j] != 0:
+#                 g.append((str(i), str(j), str(-math.log(trans_p[i][j]))))
+#
+#     df = pd.DataFrame(g)
+#     df.to_csv(path, index=False, sep=" ", header=False)
+#
+#     return g
+
+
 def trans_to_graph(trans_p, path):
-    g = []
-    for i in range(len(trans_p)):
-        for j in range(len(trans_p[i])):
-            if trans_p[i][j] != 0:
-                g.append((str(i), str(j), str(-math.log(trans_p[i][j]))))
+    row, col = np.where(trans_p != 0)
+    data = -np.log(trans_p[row, col])
+    g = np.column_stack((row.astype(str), col.astype(str), data.astype(str)))
 
     df = pd.DataFrame(g)
     df.to_csv(path, index=False, sep=" ", header=False)
@@ -81,14 +106,16 @@ def eppstein(trans_p, p, start_state, end_state, k):
     classname = "edu.ufl.cise.bsmock.graph.ksp.test.TestEppstein"
     MyClass = jpype.JClass(classname)
     output_stream = jpype.JPackage('java.io').ByteArrayOutputStream()
-    jpype.JPackage('java.lang').System.setOut(jpype.JPackage('java.io').PrintStream(output_stream))
+    jpype.JPackage('java.lang').System.setOut(
+        jpype.JPackage('java.io').PrintStream(output_stream))
 
     trans_to_graph(trans_p, graph_path)
     args = [graph_path, str(start_state), str(end_state), str(k)]
     MyClass.main(args)
     output_string = str(output_stream.toString())
     result = eppstein_output_to_list(p, output_string)
-
+    print(output_string)
+    print('end')
     return result
 
 
@@ -100,7 +127,7 @@ def main():
     end_state = 3
     k = 10000
     states, start_p, trans_p, emit_p = h.to_hidden_markov_model(
-    T, p, 12, 4, start_state)
+        T, p, 12, 4, start_state)
     print('result')
     start_time = time.time()
     end_time = time.time()

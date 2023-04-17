@@ -111,7 +111,7 @@ def take_action(state, action, T):
     Given a state, an action, and a transition model T,
     return the next state based on the probabilities of the transition model.
     """
-    next_states = np.nonzero(T[state,:, action])[0]
+    next_states = np.nonzero(T[state, :, action])[0]
     probs = T[state, next_states, action]
     next_state = np.random.choice(next_states, p=probs)
     return next_state
@@ -262,7 +262,7 @@ def kl_divergence_for_each_state(p, q):
     _q = np.stack((q, 1 - q), axis=-1)
 
     # calculate KL divergence for each state
-    # result = np.sum(_p * np.log(_p / _q), axis=-1)
+    #result = np.sum(_p * np.log(_p / _q), axis=-1)
     result = np.sum(kl_div(_p, _q), axis=-1)
 
     return (_p, _q, result)
@@ -301,7 +301,7 @@ def equilibrium_distribution(transition_matrix, max_iter=100, tol=1e-8):
         prev_distribution = distribution
         # Calculate new distribution
         distribution = np.sum(
-            transition_matrix[:,:, i] @ distribution, axis=1)
+            transition_matrix[:, :, i] @ distribution, axis=1)
         # Check for convergence
         if np.linalg.norm(distribution - prev_distribution) < tol:
             break
@@ -397,7 +397,7 @@ def enumerate_policies(states, actions, obstacles, terminals):
     # Enumerate the policies of the MDP
     policies = enumerate_policies(mdp)
     """
-    number_of_policies = len(actions) ** (len(states) - 
+    number_of_policies = len(actions) ** (len(states) -
                                           len(obstacles) - len(terminals))
     # Create the 2-d array of possible selections
     selections = [actions for i in range(len(states))]
@@ -482,28 +482,28 @@ def kl_divergence_example():
 
     result_1 = np.sum(kl_div(p, q), axis=-1)
     result_2 = np.sum(kl_div(q, p), axis=-1)
-    
+
     result_3 = kl_divergence_for_each_state(p, q)
     result_4 = kl_divergence_for_each_state(q, p)
-    
+
     return (result_1, result_2, np.sum(result_3[2]), np.sum(result_4[2]))
 
 
 def can_reach_terminal_states(start_state, terminal_states, T):
     # Get the number of states and actions from the transition model
     num_states, _, num_actions = T.shape
-    
+
     # Initialize the set of reachable states with the start state
     reachable_states = {start_state}
-    
+
     # Keep track of previously reachable states to detect convergence
     prev_reachable_states = set()
-    
+
     # Repeat until convergence
     while reachable_states != prev_reachable_states:
         # Update the set of previously reachable states
         prev_reachable_states = reachable_states.copy()
-        
+
         # For each reachable state, check if it can reach any new states
         for state in prev_reachable_states:
             for action in range(num_actions):
@@ -517,7 +517,7 @@ def can_any_state_reach_terminal_states(T, terminal_states):
     n_states = T.shape[0]
     Q = np.zeros((n_states, n_states))
     for a in range(T.shape[2]):
-        Q += T[:,:, a]
+        Q += T[:, :, a]
     for t in terminal_states:
         if np.any(Q[:, t] > 0):
             return True
@@ -527,6 +527,17 @@ def can_any_state_reach_terminal_states(T, terminal_states):
 def main():
     print("Calling main function in helpers.py")
     print(kl_divergence_example())
+
+    p = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0])
+    q = np.array([4.86092583e-037, 7.16607983e-036, 1.31116421e-035, 2.99876161e-036,
+                  2.04905117e-037, 0.00000000e+000, 3.11038308e-035, 7.11373796e-036,
+                  1.00000000e-100, 5.74517874e-002, 4.59614299e-001, 4.59614297e-001])
+
+    result = kl_divergence_for_each_state(p, q)[2]
+    print(result)
+
+    print(np.finfo(np.float64).min)  # smallest float64 number
+    print(np.finfo(np.float64).max)  # largest float64 number
 
 
 if __name__ == "__main__":

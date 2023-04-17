@@ -28,8 +28,10 @@ def pareto_front(utility, lower_leakage, upper_leakage, title):
     """
     Function to calculate the Pareto front
     """
-    sorted_indices_lower = sorted(range(len(lower_leakage)), key=lambda x: lower_leakage[x])
-    sorted_indices_upper = sorted(range(len(upper_leakage)), key=lambda x: upper_leakage[x])
+    sorted_indices_lower = sorted(
+        range(len(lower_leakage)), key=lambda x: lower_leakage[x])
+    sorted_indices_upper = sorted(
+        range(len(upper_leakage)), key=lambda x: upper_leakage[x])
     pareto_front_lower = [sorted_indices_lower[0]]
     pareto_front_upper = [sorted_indices_upper[0]]
     for i in range(1, len(sorted_indices_lower)):
@@ -67,8 +69,10 @@ def pareto_front_separate(utility, lower_leakage, upper_leakage, title_1, title_
     """
     Function to calculate the Pareto front
     """
-    sorted_indices_lower = sorted(range(len(lower_leakage)), key=lambda x: lower_leakage[x])
-    sorted_indices_upper = sorted(range(len(upper_leakage)), key=lambda x: upper_leakage[x])
+    sorted_indices_lower = sorted(
+        range(len(lower_leakage)), key=lambda x: lower_leakage[x])
+    sorted_indices_upper = sorted(
+        range(len(upper_leakage)), key=lambda x: upper_leakage[x])
     pareto_front_lower = [sorted_indices_lower[0]]
     pareto_front_upper = [sorted_indices_upper[0]]
     for i in range(1, len(sorted_indices_lower)):
@@ -85,7 +89,7 @@ def pareto_front_separate(utility, lower_leakage, upper_leakage, title_1, title_
 
     # Plot the Pareto front
     plt.figure(1)
-    # plt.scatter(utility, lower_leakage)
+    plt.scatter(utility, lower_leakage, c='orange')
     plt.scatter(pareto_front_utility, pareto_front_leakage_lower, c='red')
     plt.plot(pareto_front_utility, pareto_front_leakage_lower, '-r')
     # Set the y-axis grid lines to extend across the plot
@@ -95,7 +99,7 @@ def pareto_front_separate(utility, lower_leakage, upper_leakage, title_1, title_
     plt.title(title_1)
 
     plt.figure(2)
-    # plt.scatter(utility, upper_leakage, c='blue')
+    plt.scatter(utility, upper_leakage, c='blue')
     pareto_front_utility = [utility[i] for i in pareto_front_upper]
     plt.scatter(pareto_front_utility, pareto_front_leakage_upper, c='green')
     plt.plot(pareto_front_utility, pareto_front_leakage_upper, '-g')
